@@ -4,9 +4,9 @@ include("core.jl")
 include("common.jl")
 
 if is_windows()
-    const dllname = Pkg.dir("Sims", "deps", "daskr$(Sys.WORD_SIZE).dll")
+    const dllname = Pkg.dir("DASKR", "deps", "daskr$(Sys.WORD_SIZE).dll")
 else
-    const dllname = Pkg.dir("Sims", "deps", "daskr.so")
+    const dllname = Pkg.dir("DASKR", "deps", "daskr.so")
 end
 
 function __init__() 
