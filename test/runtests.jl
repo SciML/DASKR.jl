@@ -18,7 +18,7 @@ let
     Nsteps = 500
     abstol = 1e-4
     reltol = 1e-4
-    
+
     tstep = tstop / Nsteps
     tout = [tstep]
     idid = Int32[0]
@@ -34,7 +34,7 @@ let
     rpar = [0.0]
     rtol = [reltol]
     atol = [abstol]
-    lrw = Int32[N[1]^3 + 9 * N[1] + 60 + 3 * nrt[1]] 
+    lrw = Int32[N[1]^3 + 9 * N[1] + 60 + 3 * nrt[1]]
     rwork = zeros(lrw[1])
     liw = Int32[2*N[1] + 40]
     iwork = zeros(Int32, liw[1])
@@ -67,11 +67,14 @@ let
     dt = 1000
     saveat = float(collect(0:dt:100000))
     sol = solve(prob, DASKR.Algorithm())
+    sol = solve(prob, DASKR.Algorithm(),save_timeseries=false)
     sol = solve(prob, DASKR.Algorithm(), saveat = saveat, isdiff = [true, true, false])
-    sol = solve(prob, DASKR.Algorithm(), saveat = saveat)
-    
+    sol = solve(prob, DASKR.Algorithm(), saveat = saveat,
+                      save_timeseries = false,
+                      isdiff = [true, true, false])
+    sol = solve(prob, DASKR.Algorithm(), saveat = saveat, save_timeseries = false)
+
     @test intersect(sol.t, saveat) == saveat
-    
+
     @test sol.t == saveat
 end
-
