@@ -67,12 +67,13 @@ function solve{uType,duType,tType,isinplace,F,LinearSolver}(
     tstart = 0.0
     tstop = 50.0
     Nsteps = 500
-    
+
     tstep = tstop / Nsteps
     tout = [tstep]
     idid = Int32[0]
     info = zeros(Int32, 20)
 
+    info[3] = save_timeseries
     info[11] = 0
     info[16] = 0    # == 1 to ignore algebraic variables in the error calculation
     info[17] = 0
@@ -83,7 +84,7 @@ function solve{uType,duType,tType,isinplace,F,LinearSolver}(
     rpar = [0.0]
     rtol = [reltol]
     atol = [abstol]
-    lrw = Int32[N[1]^3 + 9 * N[1] + 60 + 3 * nrt[1]] 
+    lrw = Int32[N[1]^3 + 9 * N[1] + 60 + 3 * nrt[1]]
     rwork = zeros(lrw[1])
     liw = Int32[2*N[1] + 40]
     iwork = zeros(Int32, liw[1])
@@ -101,24 +102,14 @@ function solve{uType,duType,tType,isinplace,F,LinearSolver}(
     u = copy(u0)
     du = copy(du0)
     # The Inner Loops : Style depends on save_timeseries
-    if save_timeseries
-        for k in 1:length(save_ts)
-            tout = [save_ts[k]]
-            while t[1] < save_ts[k]
-                DASKR.unsafe_solve(res, N, t, u, du, tout, info, rtol, atol, idid, rwork, lrw, iwork, liw, rpar, ipar, jac, psol, rt, nrt, jroot)
-                push!(ures,copy(u))
-                push!(ts, t[1])
-            end
+    for k in 1:length(save_ts)
+        tout = [save_ts[k]]
+        while t[1] < save_ts[k]
+            DASKR.unsafe_solve(res, N, t, u, du, tout, info, rtol, atol, idid, rwork, lrw, iwork, liw, rpar, ipar, jac, psol, rt, nrt, jroot)
+            push!(ures,copy(u))
+            push!(ts, t[1])
         end
-    else # save_timeseries == false, so use IDA_NORMAL style
-        for k in 2:length(save_ts)
-            # flag = @checkflag IDASolve(mem,
-            #                     save_ts[k], tout, utmp, dutmp, IDA_NORMAL)
-            # push!(ures,copy(utmp))
-        end
-        ts = save_ts
     end
-
     ### Finishing Routine
 
     timeseries = Vector{uType}(0)
