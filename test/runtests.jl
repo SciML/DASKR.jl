@@ -66,13 +66,13 @@ let
     prob = DAEProblem(resrob,u0,du0,(0.0,100000.0))
     dt = 1000
     saveat = float(collect(0:dt:100000))
-    sol = solve(prob, DASKR.Algorithm())
-    sol = solve(prob, DASKR.Algorithm(),save_timeseries=false)
-    sol = solve(prob, DASKR.Algorithm(), saveat = saveat, isdiff = [true, true, false])
-    sol = solve(prob, DASKR.Algorithm(), saveat = saveat,
+    sol = solve(prob, daskr())
+    sol = solve(prob, daskr(),save_timeseries=false)
+    sol = solve(prob, daskr(), saveat = saveat, isdiff = [true, true, false])
+    sol = solve(prob, daskr(), saveat = saveat,
                       save_timeseries = false,
                       isdiff = [true, true, false])
-    sol = solve(prob, DASKR.Algorithm(), saveat = saveat, save_timeseries = false)
+    sol = solve(prob, daskr(), saveat = saveat, save_timeseries = false)
 
     @test intersect(sol.t, saveat) == saveat
 
