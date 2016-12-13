@@ -8,9 +8,10 @@ import DiffEqBase: solve
 abstract DASKRDAEAlgorithm{LinearSolver} <: AbstractDAEAlgorithm
 
 # DAE Algorithms
-immutable Algorithm{LinearSolver} <: DASKRDAEAlgorithm{LinearSolver} end
-Algorithm(;linear_solver=:Dense) = Algorithm{linear_solver}()
+immutable daskr{LinearSolver} <: DASKRDAEAlgorithm{LinearSolver} end
+daskr(;linear_solver=:Dense) = daskr{linear_solver}()
 
+export daskr
 
 ## Solve for DAEs uses raw_solver
 
