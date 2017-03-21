@@ -2,6 +2,7 @@
 """
 Return a C-style callback for the residual function `fun`. Suitable for use with `unsafe_solve`.
 """
+res_c(::Void) = Ref(1)
 function res_c(fun)
     newfun = function(t, y, yp, cj, delta, ires, rpar, ipar)
         n = convert(Array{Int}, unsafe_wrap(Array, ipar, (3,)))
@@ -21,6 +22,7 @@ end
 """
 Return a C-style callback for the event-handling function `fun`. Suitable for use with `unsafe_solve`.
 """
+rt_c(::Void) = Ref(1)
 function rt_c(fun)
     newfun = function(neq, t, y, yp, nrt, rval, rpar, ipar)
         n = convert(Array{Int}, unsafe_wrap(Array, ipar, (3,)))
@@ -34,20 +36,21 @@ function rt_c(fun)
     cfunction(newfun, Void, 
              # T, Y, YPRIME, CJ, DELTA, IRES, RPAR, IPAR 
              (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64},
-              Ptr{Int32}, Ptr{Float64}, Ptr{Int32}))
+              Ptr{Float64}, Ptr{Float64}, Ptr{Int32}))
 end
 
 """
 Return a C-style callback for the Jacobian function `fun`. Suitable for use with `unsafe_solve`.
 """
+jac_c(::Void) = Ref(1)
 function jac_c(fun)
     newfun = function(t, y, yp, pd, cj, rpar, ipar)
         n = convert(Array{Int}, unsafe_wrap(Array, ipar, (3,)))
         t = unsafe_wrap(Array, t, (1,))
         y = unsafe_wrap(Array, y, (n[1],))
         yp = unsafe_wrap(Array, yp, (n[1],))
-        pd = unsafe_wrap(Array, rval, (n[3], n[1]))
-        cj = unsafe_wrap(Array, rval, (1,))
+        pd = unsafe_wrap(Array, pd, (n[3], n[1]))
+        cj = unsafe_wrap(Array, cj, (1,))
         fun(t, y, yp, pd, cj)
         return nothing
     end
@@ -57,6 +60,8 @@ function jac_c(fun)
               Ptr{Float64}, Ptr{Int32}))
 end
 
+# TODO - finish psol_c()
+psol_c(args...) = Ref(1)
 
 """
 Direct, raw access to the DASKR solver.
