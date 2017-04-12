@@ -9,26 +9,50 @@ abstract DASKRDAEAlgorithm{LinearSolver} <: AbstractDAEAlgorithm
 
 # DAE Algorithms
 immutable daskr{LinearSolver} <: DASKRDAEAlgorithm{LinearSolver} end
-daskr(;linear_solver=:Dense) = daskr{linear_solver}()
+Base.@pure daskr(;linear_solver=:Dense) = daskr{linear_solver}()
 
 export daskr
 
 ## Solve for DAEs uses raw_solver
 
-function solve{uType,duType,tType,isinplace,F,LinearSolver}(
-    prob::AbstractDAEProblem{uType,duType,tType,isinplace,F},
+function solve{uType,duType,tType,isinplace,LinearSolver}(
+    prob::AbstractDAEProblem{uType,duType,tType,isinplace},
     alg::DASKRDAEAlgorithm{LinearSolver},
     timeseries = [], ts = [], ks = [];
     callback = () -> nothing, abstol = 1/10^6, reltol = 1/10^3,
     saveat = Float64[], adaptive = true, maxiter = Int(1e5),
-    timeseries_errors = true, save_timeseries = true,
+    timeseries_errors = true, save_everystep = isempty(saveat),
+    save_start = true, save_timeseries = nothing,
     userdata = nothing, isdiff = fill(true, length(prob.u0)), kwargs...)
+
+
+    if save_timeseries != nothing
+        warn("save_timeseries is deprecated. Use save_everystep instead")
+        save_everystep = save_timeseries
+    end
 
     tspan = prob.tspan
     t0 = tspan[1]
     T = tspan[end]
 
-    save_ts = sort(unique([t0;saveat;T]))
+
+
+    if typeof(saveat) <: Number
+        saveat_vec = convert(Vector{tType},saveat:saveat:(tspan[end]-saveat))
+        # Exclude the endpoint because of floating point issues
+    else
+        saveat_vec =  convert(Vector{tType},collect(saveat))
+    end
+
+    if !isempty(saveat_vec) && saveat_vec[end] == tspan[2]
+        pop!(saveat_vec)
+    end
+
+    if !isempty(saveat_vec) && saveat_vec[1] == tspan[1]
+        save_ts = sort(unique([saveat_vec[2:end];tspan[2]]))
+    else
+        save_ts = sort(unique([saveat_vec;tspan[2]]))
+    end
 
     if T < save_ts[end]
         error("Final saving timepoint is past the solving timespan")
@@ -74,7 +98,7 @@ function solve{uType,duType,tType,isinplace,F,LinearSolver}(
     idid = Int32[0]
     info = zeros(Int32, 20)
 
-    info[3] = save_timeseries
+    info[3] = save_everystep
     info[11] = 0
     info[16] = 0    # == 1 to ignore algebraic variables in the error calculation
     info[17] = 0
@@ -98,12 +122,14 @@ function solve{uType,duType,tType,isinplace,F,LinearSolver}(
     psol = Int32[0]
 
     ures = Vector{Vector{Float64}}()
-    ts   = [t0]
-
+    save_start ? ts = [t0] : ts = Float64[]
+    save_start ? start_idx = 1 : start_idx = 2
+    save_start && push!(ures, copy(u0))
+    
     u = copy(u0)
     du = copy(du0)
     # The Inner Loops : Style depends on save_timeseries
-    for k in 1:length(save_ts)
+    for k in start_idx:length(save_ts)
         tout = [save_ts[k]]
         while t[1] < save_ts[k]
             DASKR.unsafe_solve(res, N, t, u, du, tout, info, rtol, atol, idid, rwork, lrw, iwork, liw, rpar, ipar, jac, psol, rt, nrt, jroot)
@@ -113,17 +139,20 @@ function solve{uType,duType,tType,isinplace,F,LinearSolver}(
     end
     ### Finishing Routine
 
+
+
     timeseries = Vector{uType}(0)
     if typeof(prob.u0)<:Number
-        for i=1:length(ures)
+        for i=start_idx:length(ures)
             push!(timeseries,ures[i][1])
         end
     else
-        for i=1:length(ures)
+        for i=start_idx:length(ures)
             push!(timeseries,reshape(ures[i],sizeu))
         end
     end
 
     build_solution(prob,alg,ts,timeseries,
-                      timeseries_errors = timeseries_errors)
+                      timeseries_errors = timeseries_errors,
+                      retcode = :Success)
 end

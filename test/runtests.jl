@@ -67,14 +67,17 @@ let
     dt = 1000
     saveat = float(collect(0:dt:100000))
     sol = solve(prob, daskr())
-    sol = solve(prob, daskr(),save_timeseries=false)
+    @test length(sol.t) > 2
+    sol = solve(prob, daskr(),save_everystep=false)
+    @test length(sol.u) == length(sol.t) == 2
     sol = solve(prob, daskr(), saveat = saveat, isdiff = [true, true, false])
-    sol = solve(prob, daskr(), saveat = saveat,
-                      save_timeseries = false,
-                      isdiff = [true, true, false])
-    sol = solve(prob, daskr(), saveat = saveat, save_timeseries = false)
-
-    @test intersect(sol.t, saveat) == saveat
-
     @test sol.t == saveat
+    sol = solve(prob, daskr(), saveat = dt, isdiff = [true, true, false])
+    @test sol.t == saveat
+    sol = solve(prob, daskr(), saveat = saveat,
+                      save_everystep = true,
+                      isdiff = [true, true, false])
+    @test minimum([t ∈ sol.t for t in saveat])
+    sol = solve(prob, daskr(), saveat = saveat, save_everystep = true)
+    @test intersect(sol.t, saveat) == saveat
 end
