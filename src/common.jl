@@ -1,6 +1,6 @@
 # DASKR.jl JuliaDiffEq common algorithms
 
-using Compat, DiffEqBase
+using DiffEqBase
 import DiffEqBase: solve
 
 
@@ -125,7 +125,7 @@ function solve{uType,duType,tType,isinplace,LinearSolver}(
     save_start ? ts = [t0] : ts = Float64[]
     save_start ? start_idx = 1 : start_idx = 2
     save_start && push!(ures, copy(u0))
-    
+
     u = copy(u0)
     du = copy(du0)
     # The Inner Loops : Style depends on save_timeseries
