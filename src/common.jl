@@ -30,6 +30,10 @@ function solve{uType,duType,tType,isinplace,LinearSolver}(
         warn("save_timeseries is deprecated. Use save_everystep instead")
         save_everystep = save_timeseries
     end
+    
+    if callback != nothing
+        error("DASKR is not compatible with callbacks.")
+    end
 
     tspan = prob.tspan
     t0 = tspan[1]
