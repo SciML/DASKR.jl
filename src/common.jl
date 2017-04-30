@@ -31,10 +31,6 @@ function solve{uType,duType,tType,isinplace,LinearSolver}(
         save_everystep = save_timeseries
     end
     
-    if prob.mass_matrix != I
-        error("This solver is not able to use mass matrices.")
-    end
-    
     if callback != nothing
         error("DASKR is not compatible with callbacks.")
     end
