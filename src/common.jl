@@ -5,7 +5,7 @@ import DiffEqBase: solve
 
 
 # Abstract Types
-abstract DASKRDAEAlgorithm{LinearSolver} <: AbstractDAEAlgorithm
+@compat abstract type DASKRDAEAlgorithm{LinearSolver} <: AbstractDAEAlgorithm end
 
 # DAE Algorithms
 immutable daskr{LinearSolver} <: DASKRDAEAlgorithm{LinearSolver} end
@@ -30,7 +30,7 @@ function solve{uType,duType,tType,isinplace,LinearSolver}(
         warn("save_timeseries is deprecated. Use save_everystep instead")
         save_everystep = save_timeseries
     end
-    
+
     if callback != nothing || prob.callback != nothing
         error("DASKR is not compatible with callbacks.")
     end
