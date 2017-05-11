@@ -80,4 +80,9 @@ let
     @test minimum([t ∈ sol.t for t in saveat])
     sol = solve(prob, daskr(), saveat = saveat, save_everystep = true)
     @test intersect(sol.t, saveat) == saveat
+
+    # Check for warnings
+    sol = solve(prob, daskr(), saveat = saveat, save_everystep = true,
+                dense=true, verbose=true, save_idxs = true, progress = true,
+                beta1 = 1.23, gamma = 0.5)
 end
