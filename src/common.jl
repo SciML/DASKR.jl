@@ -97,7 +97,7 @@ function solve{uType,duType,tType,isinplace,LinearSolver}(
     else
       id = Int32[x ? 1 : -1 for x in prob.differential_vars]
     end
-    
+
     tstart = 0.0
     tstop = 50.0
     Nsteps = 500

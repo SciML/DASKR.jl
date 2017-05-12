@@ -70,13 +70,13 @@ let
     @test length(sol.t) > 2
     sol = solve(prob, daskr(),save_everystep=false)
     @test length(sol.u) == length(sol.t) == 2
-    sol = solve(prob, daskr(), saveat = saveat, isdiff = [true, true, false])
+    prob2 = DAEProblem(resrob,u0,du0,(0.0,100000.0),differential_vars = [true, true, false])
+    sol = solve(prob2, daskr(), saveat = saveat)
     @test sol.t == saveat
-    sol = solve(prob, daskr(), saveat = dt, isdiff = [true, true, false])
+    sol = solve(prob2, daskr(), saveat = dt)
     @test sol.t == saveat
-    sol = solve(prob, daskr(), saveat = saveat,
-                      save_everystep = true,
-                      isdiff = [true, true, false])
+    sol = solve(prob2, daskr(), saveat = saveat,
+                      save_everystep = true)
     @test minimum([t ∈ sol.t for t in saveat])
     sol = solve(prob, daskr(), saveat = saveat, save_everystep = true)
     @test intersect(sol.t, saveat) == saveat
