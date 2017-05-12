@@ -23,14 +23,14 @@ function solve{uType,duType,tType,isinplace,LinearSolver}(
     saveat = Float64[], adaptive = true, maxiter = Int(1e5),
     timeseries_errors = true, save_everystep = isempty(saveat),
     save_start = true, save_timeseries = nothing,
-    userdata = nothing, isdiff = fill(true, length(prob.u0)), kwargs...)
+    userdata = nothing, kwargs...)
 
 
     if save_timeseries != nothing
         warn("save_timeseries is deprecated. Use save_everystep instead")
         save_everystep = save_timeseries
     end
-    
+
     if callback != nothing || prob.callback != nothing
         error("DASKR is not compatible with callbacks.")
     end
@@ -92,7 +92,12 @@ function solve{uType,duType,tType,isinplace,LinearSolver}(
                           u = vec(u); du=vec(du); 0)
     end
 
-    id = Int32[x ? 1 : -1 for x in isdiff]
+    if prob.differential_vars == nothing
+      id = ones(Int32,length(u0))
+    else
+      id = Int32[x ? 1 : -1 for x in prob.differential_vars]
+    end
+    
     tstart = 0.0
     tstop = 50.0
     Nsteps = 500
