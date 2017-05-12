@@ -3,9 +3,8 @@
 using DiffEqBase
 import DiffEqBase: solve
 
-
 # Abstract Types
-abstract DASKRDAEAlgorithm{LinearSolver} <: AbstractDAEAlgorithm
+@compat abstract type DASKRDAEAlgorithm{LinearSolver} <: AbstractDAEAlgorithm end
 
 # DAE Algorithms
 immutable daskr{LinearSolver} <: DASKRDAEAlgorithm{LinearSolver} end
@@ -19,12 +18,14 @@ function solve{uType,duType,tType,isinplace,LinearSolver}(
     prob::AbstractDAEProblem{uType,duType,tType,isinplace},
     alg::DASKRDAEAlgorithm{LinearSolver},
     timeseries = [], ts = [], ks = []; dense = true,
+    verbose=true,
     callback = nothing, abstol = 1/10^6, reltol = 1/10^3,
     saveat = Float64[], adaptive = true, maxiter = Int(1e5),
     timeseries_errors = true, save_everystep = isempty(saveat),
     save_start = true, save_timeseries = nothing,
     userdata = nothing, kwargs...)
 
+    verbose && !isempty(kwargs) && check_keywords(alg, kwargs, warnlist)
 
     if save_timeseries != nothing
         warn("save_timeseries is deprecated. Use save_everystep instead")
@@ -39,10 +40,8 @@ function solve{uType,duType,tType,isinplace,LinearSolver}(
     t0 = tspan[1]
     T = tspan[end]
 
-
-
     if typeof(saveat) <: Number
-        saveat_vec = convert(Vector{tType},saveat:saveat:(tspan[end]-saveat))
+        saveat_vec = convert(Vector{tType},saveat+tspan[1]:saveat:(tspan[end]-saveat))
         # Exclude the endpoint because of floating point issues
     else
         saveat_vec =  convert(Vector{tType},collect(saveat))
