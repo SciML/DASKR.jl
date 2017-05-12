@@ -17,14 +17,13 @@ export daskr
 function solve{uType,duType,tType,isinplace,LinearSolver}(
     prob::AbstractDAEProblem{uType,duType,tType,isinplace},
     alg::DASKRDAEAlgorithm{LinearSolver},
-    timeseries = [], ts = [], ks = [];
-
+    timeseries = [], ts = [], ks = []; dense = true,
     verbose=true,
     callback = nothing, abstol = 1/10^6, reltol = 1/10^3,
     saveat = Float64[], adaptive = true, maxiter = Int(1e5),
     timeseries_errors = true, save_everystep = isempty(saveat),
     save_start = true, save_timeseries = nothing,
-    userdata = nothing, isdiff = fill(true, length(prob.u0)), kwargs...)
+    userdata = nothing, kwargs...)
 
     verbose && !isempty(kwargs) && check_keywords(alg, kwargs, warnlist)
 
@@ -92,7 +91,12 @@ function solve{uType,duType,tType,isinplace,LinearSolver}(
                           u = vec(u); du=vec(du); 0)
     end
 
-    id = Int32[x ? 1 : -1 for x in isdiff]
+    if prob.differential_vars == nothing
+      id = ones(Int32,length(u0))
+    else
+      id = Int32[x ? 1 : -1 for x in prob.differential_vars]
+    end
+
     tstart = 0.0
     tstop = 50.0
     Nsteps = 500
@@ -126,9 +130,11 @@ function solve{uType,duType,tType,isinplace,LinearSolver}(
     psol = Int32[0]
 
     ures = Vector{Vector{Float64}}()
+    dures = Vector{Vector{Float64}}()
     save_start ? ts = [t0] : ts = Float64[]
     save_start ? start_idx = 1 : start_idx = 2
     save_start && push!(ures, copy(u0))
+    save_start && dense && push!(dures, copy(du0))
 
     u = copy(u0)
     du = copy(du0)
@@ -139,6 +145,9 @@ function solve{uType,duType,tType,isinplace,LinearSolver}(
             DASKR.unsafe_solve(res, N, t, u, du, tout, info, rtol, atol, idid, rwork, lrw, iwork, liw, rpar, ipar, jac, psol, rt, nrt, jroot)
             push!(ures,copy(u))
             push!(ts, t[1])
+            if dense
+              push!(dures,copy(du))
+            end
         end
     end
     ### Finishing Routine
@@ -157,6 +166,8 @@ function solve{uType,duType,tType,isinplace,LinearSolver}(
     end
 
     build_solution(prob,alg,ts,timeseries,
+                      du = dures,
+                      dense = dense,
                       timeseries_errors = timeseries_errors,
                       retcode = :Success)
 end
