@@ -2,6 +2,8 @@ __precompile__()
 
 module DASKR
 
+using Compat
+
 include("core.jl")
 include("common.jl")
 
