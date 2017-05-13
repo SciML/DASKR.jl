@@ -17,15 +17,30 @@ export daskr
 function solve{uType,duType,tType,isinplace,LinearSolver}(
     prob::AbstractDAEProblem{uType,duType,tType,isinplace},
     alg::DASKRDAEAlgorithm{LinearSolver},
-    timeseries = [], ts = [], ks = []; dense = true,
+    timeseries = [], ts = [], ks = [];
+
     verbose=true,
     callback = nothing, abstol = 1/10^6, reltol = 1/10^3,
     saveat = Float64[], adaptive = true, maxiter = Int(1e5),
-    timeseries_errors = true, save_everystep = isempty(saveat),
+    timeseries_errors = true, save_everystep = isempty(saveat), dense = save_everystep,
     save_start = true, save_timeseries = nothing,
-    userdata = nothing, kwargs...)
+    userdata = nothing,
+    kwargs...)
 
-    verbose && !isempty(kwargs) && check_keywords(alg, kwargs, warnlist)
+    if verbose
+        warned = !isempty(kwargs) && check_keywords(alg, kwargs, warnlist)
+        if !(typeof(prob.f) <: AbstractParameterizedFunction)
+            if has_tgrad(prob.f)
+                warn("Explicit t-gradient given to this stiff solver is ignored.")
+                warned = true
+            end
+            if has_jac(prob.f)
+                warn("Explicit Jacobian given to this stiff solver is ignored.")
+                warned = true
+            end
+        end
+        warned && warn_compat()
+    end
 
     if save_timeseries != nothing
         warn("save_timeseries is deprecated. Use save_everystep instead")
@@ -88,13 +103,13 @@ function solve{uType,duType,tType,isinplace,LinearSolver}(
         f! = prob.f
     else # Then it's an in-place function on an abstract array
         f! = (t,u,du,out) -> (prob.f(t,reshape(u,sizeu),reshape(du,sizedu),out);
-                          u = vec(u); du=vec(du); 0)
+                              u = vec(u); du=vec(du); 0)
     end
 
     if prob.differential_vars == nothing
-      id = ones(Int32,length(u0))
+        id = ones(Int32,length(u0))
     else
-      id = Int32[x ? 1 : -1 for x in prob.differential_vars]
+        id = Int32[x ? 1 : -1 for x in prob.differential_vars]
     end
 
     tstart = 0.0
@@ -142,12 +157,11 @@ function solve{uType,duType,tType,isinplace,LinearSolver}(
     for k in start_idx:length(save_ts)
         tout = [save_ts[k]]
         while t[1] < save_ts[k]
-            DASKR.unsafe_solve(res, N, t, u, du, tout, info, rtol, atol, idid, rwork, lrw, iwork, liw, rpar, ipar, jac, psol, rt, nrt, jroot)
+            DASKR.unsafe_solve(res, N, t, u, du, tout, info, rtol, atol, idid, rwork,
+                               lrw, iwork, liw, rpar, ipar, jac, psol, rt, nrt, jroot)
             push!(ures,copy(u))
             push!(ts, t[1])
-            if dense
-              push!(dures,copy(du))
-            end
+            dense && push!(dures,copy(du))
         end
     end
     ### Finishing Routine
@@ -166,8 +180,8 @@ function solve{uType,duType,tType,isinplace,LinearSolver}(
     end
 
     build_solution(prob,alg,ts,timeseries,
-                      du = dures,
-                      dense = dense,
-                      timeseries_errors = timeseries_errors,
-                      retcode = :Success)
+                   du = dures,
+                   dense = dense,
+                   timeseries_errors = timeseries_errors,
+                   retcode = :Success)
 end
