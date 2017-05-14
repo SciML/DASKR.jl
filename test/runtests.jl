@@ -60,10 +60,30 @@ function resrob(tres, y, yp, r)
     r[1] -=  yp[1]
     r[3]  =  y[1] + y[2] + y[3] - 1.0
 end
+
+function testjac(t,u,du,res)
+  res[1] = du[1] - 2.0 * u[1] + 1.2 * u[1]*u[2]
+  res[2] = du[2] -3 * u[2] - u[1]*u[2]
+end
+
+function testjac(::Type{Val{:jac}},t,u,J)
+  J[1,1] = 2.0 - 1.2 * u[2]
+  J[1,2] = -2.0 * u[1]
+  J[2,1] = 1 * u[2]
+  J[2,2] = -3 + u[1]
+  nothing
+end
+
+function testjac(::Type{Val{:tgrad}},t,u,J)
+  J[1] =  0
+  J[2] =  0
+  nothing
+end
+
 let
     u0 = [1.0, 0, 0]
     du0 = [-0.04, 0.04, 0.0]
-    prob = DAEProblem(resrob,u0,du0,(0.0,100000.0))
+    prob = DAEProblem(resrob,u0,du0,(0.0,100000.0))    
     dt = 1000
     saveat = float(collect(0:dt:100000))
     sol = solve(prob, daskr())
@@ -81,8 +101,23 @@ let
     sol = solve(prob, daskr(), saveat = saveat, save_everystep = true)
     @test intersect(sol.t, saveat) == saveat
 
+    # Check for deprecated save_timeseries
+    sol = solve(prob, daskr(), saveat = saveat, save_timeseries = true)
+
+    # Test for callback
+    @test_throws ErrorException solve(prob, daskr(), saveat = saveat, save_everystep = true,
+                                      callback = (()->true))
+
     # Check for warnings
     sol = solve(prob, daskr(), saveat = saveat, save_everystep = true,
-                dense=true, verbose=true, save_idxs = true, progress = true,
-                beta1 = 1.23, gamma = 0.5)
+                verbose = true, save_idxs = true, d_discontinuities = true, isoutofdomain = true,
+                unstable_check = true, calck = true, progress = true, timeseries_steps = [1,2,3],
+                dtmin = 1, dtmax = 2, dense=true,
+                internalnorm=0, gamma = 0.5, beta1 = 1.23, beta2 = 2.34,  qmin=1.0, qmax=2.0)
+
+    # Check for warning about Jacobean present and/or gradient
+    prob3 = DAEProblem(testjac,ones(2),[0.8,-2.0],(0.0,100000.0))
+    sol = solve(prob3, daskr(), saveat = saveat, save_everystep = true, verbose = true)
+
+    nothing
 end
