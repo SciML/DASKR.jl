@@ -21,7 +21,7 @@ function solve{uType,duType,tType,isinplace,LinearSolver}(
 
     verbose=true,
     callback = nothing, abstol = 1/10^6, reltol = 1/10^3,
-    saveat = Float64[], adaptive = true, maxiter = Int(1e5),
+    saveat = Float64[], adaptive = true, maxiters = Int(1e5),
     timeseries_errors = true, save_everystep = isempty(saveat), dense = save_everystep,
     save_start = true, save_timeseries = nothing,
     userdata = nothing,
