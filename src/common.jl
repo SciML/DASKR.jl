@@ -1,6 +1,7 @@
 # DASKR.jl JuliaDiffEq common algorithms
 
-using DiffEqBase
+using Reexport
+@reexport using DiffEqBase
 import DiffEqBase: solve
 
 # Abstract Types
