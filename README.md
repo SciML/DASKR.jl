@@ -13,3 +13,22 @@ A solver for differential algebraic equations (DAE). This wraps the original DAS
 
 An interface to the JuliaDiffEq common interface is also provided.
 
+## Common Interface Example
+
+```julia
+u0 = [1.0, 0, 0]
+du0 = [-0.04, 0.04, 0.0]
+tspan = (0.0,100000.0)
+
+function resrob(tres, y, yp, r)
+    r[1]  = -0.04*y[1] + 1.0e4*y[2]*y[3]
+    r[2]  = -r[1] - 3.0e7*y[2]*y[2] - yp[2]
+    r[1] -=  yp[1]
+    r[3]  =  y[1] + y[2] + y[3] - 1.0
+end
+
+prob = DAEProblem(resrob,u0,du0,tspan)    
+sol = solve(prob, daskr())
+```
+
+The options for `solve` are documented [at the common solver options page](http://docs.juliadiffeq.org/latest/basics/common_solver_opts.html). For more details, see the [ODE Tutorial](http://docs.juliadiffeq.org/latest/tutorials/ode_example.html) and the [DAE Tutorial](http://docs.juliadiffeq.org/latest/tutorials/dae_example.html) pages from DifferentialEquations.jl.
