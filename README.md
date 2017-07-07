@@ -16,6 +16,7 @@ An interface to the JuliaDiffEq common interface is also provided.
 ## Common Interface Example
 
 ```julia
+using DASKR
 u0 = [1.0, 0, 0]
 du0 = [-0.04, 0.04, 0.0]
 tspan = (0.0,100000.0)
