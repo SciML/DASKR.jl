@@ -83,7 +83,7 @@ end
 let
     u0 = [1.0, 0, 0]
     du0 = [-0.04, 0.04, 0.0]
-    prob = DAEProblem(resrob,u0,du0,(0.0,100000.0))    
+    prob = DAEProblem(resrob,u0,du0,(0.0,100000.0))
     dt = 1000
     saveat = float(collect(0:dt:100000))
     sol = solve(prob, daskr())
@@ -118,6 +118,17 @@ let
     # Check for warning about Jacobean present and/or gradient
     prob3 = DAEProblem(testjac,ones(2),[0.8,-2.0],(0.0,100000.0))
     sol = solve(prob3, daskr(), saveat = saveat, save_everystep = true, verbose = true)
+
+    # inconsistent initial conditions
+    function f!(t, u, du, res)
+        res[1] = du[1]-1.01
+        return
+    end
+    u0 = [0.]
+    tspan = (0.0, 10.)
+    du0 = [0.]
+    dae_prob = DAEProblem(f!,u0,du0,tspan, differential_vars=[true])
+    sol = solve(dae_prob,daskr())
 
     nothing
 end
