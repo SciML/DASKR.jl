@@ -66,11 +66,11 @@ function testjac(t,u,du,res)
   res[2] = du[2] -3 * u[2] - u[1]*u[2]
 end
 
-function testjac(::Type{Val{:jac}},t,u,J)
-  J[1,1] = 2.0 - 1.2 * u[2]
-  J[1,2] = -2.0 * u[1]
-  J[2,1] = 1 * u[2]
-  J[2,2] = -3 + u[1]
+function testjac(::Type{Val{:jac}},t,u,du,gamma,J)
+  J[1,1] = gamma - 2.0 + 1.2 * u[2]
+  J[1,2] = 1.2 * u[1]
+  J[2,1] = - 1 * u[2]
+  J[2,2] = gamma - 3 - u[1]
   nothing
 end
 
@@ -79,6 +79,8 @@ function testjac(::Type{Val{:tgrad}},t,u,J)
   J[2] =  0
   nothing
 end
+
+jac_used = false
 
 let
     u0 = [1.0, 0, 0]
@@ -132,7 +134,7 @@ let
         res[1] = 1.01du[1]
         return
     end
-    jac_used = false
+
     function f2!(::Type{Val{:jac}},t,u,du,gamma,out)
         global jac_used
         jac_used = true
