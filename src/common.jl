@@ -35,10 +35,6 @@ function solve{uType,duType,tType,isinplace,LinearSolver}(
                 warn("Explicit t-gradient given to this stiff solver is ignored.")
                 warned = true
             end
-            if has_jac(prob.f)
-                warn("Explicit Jacobian given to this stiff solver is ignored.")
-                warned = true
-            end
         end
         warned && warn_compat()
     end
@@ -140,7 +136,12 @@ function solve{uType,duType,tType,isinplace,LinearSolver}(
     ipar = Int32[length(u0), nrt[1], length(u0)]
     res = DASKR.res_c(f!)
     rt = Int32[0]
-    jac = Int32[0]
+    if has_jac(f!)
+      jac = common_jac_c(f!)
+      info[5] = 1 # Enables Jacobian
+    else
+      jac = Int32[0]
+    end
     psol = Int32[0]
 
     ures = Vector{Vector{Float64}}()

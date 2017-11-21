@@ -66,11 +66,11 @@ function testjac(t,u,du,res)
   res[2] = du[2] -3 * u[2] - u[1]*u[2]
 end
 
-function testjac(::Type{Val{:jac}},t,u,J)
-  J[1,1] = 2.0 - 1.2 * u[2]
-  J[1,2] = -2.0 * u[1]
-  J[2,1] = 1 * u[2]
-  J[2,2] = -3 + u[1]
+function testjac(::Type{Val{:jac}},t,u,du,gamma,J)
+  J[1,1] = gamma - 2.0 + 1.2 * u[2]
+  J[1,2] = 1.2 * u[1]
+  J[2,1] = - 1 * u[2]
+  J[2,2] = gamma - 3 - u[1]
   nothing
 end
 
@@ -79,6 +79,8 @@ function testjac(::Type{Val{:tgrad}},t,u,J)
   J[2] =  0
   nothing
 end
+
+jac_used = false
 
 let
     u0 = [1.0, 0, 0]
@@ -100,9 +102,6 @@ let
     @test minimum([t ∈ sol.t for t in saveat])
     sol = solve(prob, daskr(), saveat = saveat, save_everystep = true)
     @test intersect(sol.t, saveat) == saveat
-
-    # Check for deprecated save_timeseries
-    sol = solve(prob, daskr(), saveat = saveat, save_timeseries = true)
 
     # Test for callback
     @test_throws ErrorException solve(prob, daskr(), saveat = saveat, save_everystep = true,
@@ -130,5 +129,22 @@ let
     dae_prob = DAEProblem(f!,u0,du0,tspan, differential_vars=[true])
     sol = solve(dae_prob,daskr())
 
+    # Jacobian
+    function f2!(t, u, du, res)
+        res[1] = 1.01du[1]
+        return
+    end
+
+    function f2!(::Type{Val{:jac}},t,u,du,gamma,out)
+        global jac_used
+        jac_used = true
+        out[1] = 1.01
+    end
+    u0 = [0.]
+    tspan = (0.0, 10.)
+    du0 = [0.]
+    dae_prob = DAEProblem(f2!,u0,du0,tspan, differential_vars=[true])
+    sol = solve(dae_prob,daskr())
+    @test jac_used
     nothing
 end
