@@ -158,14 +158,30 @@ function solve{uType,duType,tType,isinplace,LinearSolver}(
         while t[1] < save_ts[k]
             DASKR.unsafe_solve(res, N, t, u, du, tout, info, rtol, atol, idid, rwork,
                                lrw, iwork, liw, rpar, ipar, jac, psol, rt, nrt, jroot)
+            if idid[1] < 0
+                break
+            end
             push!(ures,copy(u))
             push!(ts, t[1])
             dense && push!(dures,copy(du))
         end
+        if idid[1] < 0
+            break
+        end
     end
     ### Finishing Routine
 
-
+    if idid[1] == -1
+        retcode = :MaxIters
+    elseif idid[1] == -7 || idid[1] == -9 || idid[1] == -10 || idid[1] == -14
+        retcode = :ConvergenceFailure
+    elseif idid[1] == -12
+        retcode = :InitialFailure
+    elseif idid[1] < 0
+        retcode = :Failure
+    else
+        retcode = :Success
+    end
 
     timeseries = Vector{uType}(0)
     if typeof(prob.u0)<:Number
@@ -182,5 +198,5 @@ function solve{uType,duType,tType,isinplace,LinearSolver}(
                    du = dures,
                    dense = dense,
                    timeseries_errors = timeseries_errors,
-                   retcode = :Success)
+                   retcode = retcode)
 end
