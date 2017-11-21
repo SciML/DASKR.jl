@@ -9,7 +9,7 @@ function res_c(fun)
         y = unsafe_wrap(Array, y, (n[1],))
         yp = unsafe_wrap(Array, yp, (n[1],))
         delta = unsafe_wrap(Array, delta, (n[1],))
-        fun(t, y, yp, delta)
+        fun(first(t), y, yp, delta)
         return nothing
     end
     cfunction(newfun, Void,
@@ -28,7 +28,7 @@ function rt_c(fun)
         y = unsafe_wrap(Array, y, (n[1],))
         yp = unsafe_wrap(Array, yp, (n[1],))
         rval = unsafe_wrap(Array, rval, (n[2],))
-        fun(t, y, yp, rval)
+        fun(first(t), y, yp, rval)
         return nothing
     end
     cfunction(newfun, Void,
