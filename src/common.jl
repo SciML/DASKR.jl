@@ -43,11 +43,6 @@ function solve{uType,duType,tType,isinplace,LinearSolver}(
         warned && warn_compat()
     end
 
-    if save_timeseries != nothing
-        warn("save_timeseries is deprecated. Use save_everystep instead")
-        save_everystep = save_timeseries
-    end
-
     if callback != nothing || prob.callback != nothing
         error("DASKR is not compatible with callbacks.")
     end
