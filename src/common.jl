@@ -8,8 +8,37 @@ import DiffEqBase: solve
 @compat abstract type DASKRDAEAlgorithm{LinearSolver} <: AbstractDAEAlgorithm end
 
 # DAE Algorithms
-immutable daskr{LinearSolver} <: DASKRDAEAlgorithm{LinearSolver} end
-Base.@pure daskr(;linear_solver=:Dense) = daskr{linear_solver}()
+immutable daskr{LinearSolver,NNEA,MKI,MKV} <: DASKRDAEAlgorithm{LinearSolver}
+    jac_upper::Int
+    jac_lower::Int
+    max_order::Int
+    non_negativity_enforcement::Int
+    non_negativity_enforcement_array::NNEA
+    max_krylov_iters::MKI
+    num_krylov_vectors::MKV
+    max_number_krylov_restarts::Int
+    krylov_convergence_test_constant::Float64
+    exclude_algebraic_errors::Bool
+end
+Base.@pure function daskr(;linear_solver=:Dense,
+                  jac_upper=0,jac_lower=0,max_order = 5,
+                  non_negativity_enforcement = 0,
+                  non_negativity_enforcement_array = nothing,
+                  max_krylov_iters = nothing,
+                  num_krylov_vectors = nothing,
+                  max_number_krylov_restarts = 5,
+                  krylov_convergence_test_constant = 0.05,
+                  exclude_algebraic_errors = false)
+    daskr{linear_solver,typeof(non_negativity_enforcement_array),
+          typeof(max_krylov_iters),typeof(num_krylov_vectors)}(
+          jac_upper,jac_lower,max_order,non_negativity_enforcement,
+                         non_negativity_enforcement_array,
+                         max_krylov_iters,
+                         num_krylov_vectors,
+                         max_number_krylov_restarts,
+                         krylov_convergence_test_constant,
+                         exclude_algebraic_errors)
+end
 
 export daskr
 
@@ -24,8 +53,8 @@ function solve{uType,duType,tType,isinplace,LinearSolver}(
     callback = nothing, abstol = 1/10^6, reltol = 1/10^3,
     saveat = Float64[], adaptive = true, maxiters = Int(1e5),
     timeseries_errors = true, save_everystep = isempty(saveat), dense = save_everystep,
-    save_start = true, save_timeseries = nothing,
-    userdata = nothing,
+    save_start = true, save_timeseries = nothing, dtmax = nothing,
+    userdata = nothing, dt = nothing,
     kwargs...)
 
     if verbose
@@ -107,12 +136,7 @@ function solve{uType,duType,tType,isinplace,LinearSolver}(
         id = Int32[x ? 1 : -1 for x in prob.differential_vars]
     end
 
-    tstart = 0.0
-    tstop = 50.0
-    Nsteps = 500
-
-    tstep = tstop / Nsteps
-    tout = [tstep]
+    tout = [0.0]
     idid = Int32[0]
     info = zeros(Int32, 20)
 
@@ -121,21 +145,69 @@ function solve{uType,duType,tType,isinplace,LinearSolver}(
     info[16] = 0    # == 1 to ignore algebraic variables in the error calculation
     info[17] = 0
     info[18] = 2    # more initialization info
+
+    if LinearSolver == :Banded
+        info[6] = 1
+    end
+
     N = Int32[length(u0)]
-    t = [tstart]
+    t = [prob.tspan[1]]
     nrt = Int32[0]
     rpar = [0.0]
     rtol = [reltol]
     atol = [abstol]
     lrw = Int32[N[1]^3 + 9 * N[1] + 60 + 3 * nrt[1]]
     rwork = zeros(lrw[1])
-    liw = Int32[2*N[1] + 40]
+
+    liw = Int32[2*N[1] + 40] 
     iwork = zeros(Int32, liw[1])
+    iwork[1] = alg.jac_lower
+    iwork[2] = alg.jac_upper
     iwork[40 + (1:N[1])] = id
+
+    if dtmax != nothing
+        info[7] = 1
+        rwork[2] = dtmax
+    end
+
+    if dt != nothing
+        info[8] = 1
+        rwork[3] = dt
+    end
+
+    if alg.non_negativity_enforcement != 0
+        info[10] = alg.non_negativity_enforcement
+        iwork[40 + (1:N[1])] .= alg.non_negativity_enforcement_array
+    end
+
+    if alg.max_order != 5
+        info[9] = 1
+        iwork[3] = alg.max_order
+    end
+
+    if LinearSolver == :SPIGMR
+        info[12] = 1
+        if alg.max_krylov_iters != nothing
+            iwork[24] = alg.max_krylov_iters
+        end
+        if alg.num_krylov_vectors != nothing
+            iwork[25] = alg.num_krylov_vectors
+        end
+        iwork[26] = alg.max_number_krylov_restarts
+        rwork[10] = alg.krylov_convergence_test_constant
+    end
+
+    if alg.exclude_algebraic_errors
+        info[16] = 1
+    end
+
+    liw = Int32[2*N[1] + 40]
+
     jroot = zeros(Int32, max(nrt[1], 1))
     ipar = Int32[length(u0), nrt[1], length(u0)]
     res = DASKR.res_c(f!)
     rt = Int32[0]
+
     if has_jac(f!)
       jac = common_jac_c(f!)
       info[5] = 1 # Enables Jacobian

@@ -9,7 +9,7 @@ include("common.jl")
 
 const warnkeywords =
     (:save_idxs, :d_discontinuities, :isoutofdomain, :unstable_check,
-     :calck, :progress, :timeseries_steps, :dtmin, :dtmax,
+     :calck, :progress, :timeseries_steps, :dtmin,
      :internalnorm, :gamma, :beta1, :beta2, :qmax, :qmin, :qoldinit)
 
 const dllname = joinpath(dirname(dirname(@__FILE__)),
