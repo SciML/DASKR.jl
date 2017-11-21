@@ -145,7 +145,11 @@ function solve{uType,duType,tType,isinplace,LinearSolver}(
     ipar = Int32[length(u0), nrt[1], length(u0)]
     res = DASKR.res_c(f!)
     rt = Int32[0]
-    jac = Int32[0]
+    if has_jac(f!)
+      jac = jac_c((t, y, yp, pd, cj) -> f(Val{:jac},t,y,dy,cj,pd))
+    else
+      jac = Int32[0]
+    end
     psol = Int32[0]
 
     ures = Vector{Vector{Float64}}()

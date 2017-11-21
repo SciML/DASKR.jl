@@ -101,9 +101,6 @@ let
     sol = solve(prob, daskr(), saveat = saveat, save_everystep = true)
     @test intersect(sol.t, saveat) == saveat
 
-    # Check for deprecated save_timeseries
-    sol = solve(prob, daskr(), saveat = saveat, save_timeseries = true)
-
     # Test for callback
     @test_throws ErrorException solve(prob, daskr(), saveat = saveat, save_everystep = true,
                                       callback = (()->true))
@@ -130,5 +127,22 @@ let
     dae_prob = DAEProblem(f!,u0,du0,tspan, differential_vars=[true])
     sol = solve(dae_prob,daskr())
 
+    # Jacobian
+    function f2!(t, u, du, res)
+        res[1] = 1.01du[1]
+        return
+    end
+    jac_used = false
+    function f2!(::Type{Val{:jac}},t,u,du,gamma,out)
+        global jac_used
+        jac_used = true
+        out[1] = 1.01
+    end
+    u0 = [0.]
+    tspan = (0.0, 10.)
+    du0 = [0.]
+    dae_prob = DAEProblem(f2!,u0,du0,tspan, differential_vars=[true])
+    sol = solve(dae_prob,daskr())
+    @test jac_used
     nothing
 end
