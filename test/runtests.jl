@@ -62,25 +62,20 @@ function resrob(tres, y, yp, r)
 end
 
 function testjac(t,u,du,res)
-  res[1] = du[1] - 2.0 * u[1] + 1.2 * u[1]*u[2]
-  res[2] = du[2] -3 * u[2] - u[1]*u[2]
+  res[1] = du[1] - 1.5 * u[1] + 1.0 * u[1]*u[2]
+  res[2] = du[2] +3 * u[2] - u[1]*u[2]
 end
 
+jac_called = false
 function testjac(::Type{Val{:jac}},t,u,du,gamma,J)
-  J[1,1] = gamma - 2.0 + 1.2 * u[2]
-  J[1,2] = 1.2 * u[1]
+  global jac_called
+  jac_called = true
+  J[1,1] = gamma - 1.5 + 1.0 * u[2]
+  J[1,2] = 1.0 * u[1]
   J[2,1] = - 1 * u[2]
-  J[2,2] = gamma - 3 - u[1]
+  J[2,2] = gamma + 3 - u[1]
   nothing
 end
-
-function testjac(::Type{Val{:tgrad}},t,u,J)
-  J[1] =  0
-  J[2] =  0
-  nothing
-end
-
-jac_used = false
 
 let
     u0 = [1.0, 0, 0]
@@ -114,9 +109,9 @@ let
                 dtmin = 1, dtmax = 2, dense=true,
                 internalnorm=0, gamma = 0.5, beta1 = 1.23, beta2 = 2.34,  qmin=1.0, qmax=2.0)
 
-    # Check for warning about Jacobean present and/or gradient
-    prob3 = DAEProblem(testjac,ones(2),[0.8,-2.0],(0.0,100000.0))
-    sol = solve(prob3, daskr(), saveat = saveat, save_everystep = true, verbose = true)
+    prob3 = DAEProblem(testjac,ones(2),[0.5,-2.0],(0.0,10.0))
+    sol = solve(prob3, daskr())
+    @test maximum(sol[end]) < 2 #should be cyclic
 
     # inconsistent initial conditions
     function f!(t, u, du, res)
@@ -136,8 +131,8 @@ let
     end
 
     function f2!(::Type{Val{:jac}},t,u,du,gamma,out)
-        global jac_used
-        jac_used = true
+        global jac_called
+        jac_called = true
         out[1] = 1.01
     end
     u0 = [0.]
@@ -145,6 +140,6 @@ let
     du0 = [0.]
     dae_prob = DAEProblem(f2!,u0,du0,tspan, differential_vars=[true])
     sol = solve(dae_prob,daskr())
-    @test jac_used
+    @test jac_called
     nothing
 end
