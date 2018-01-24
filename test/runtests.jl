@@ -54,20 +54,20 @@ end
 
 
 # Test the JuliaDiffEq common interface
-function resrob(tres, y, yp, r)
+function resrob(r,yp,y,p,tres)
     r[1]  = -0.04*y[1] + 1.0e4*y[2]*y[3]
     r[2]  = -r[1] - 3.0e7*y[2]*y[2] - yp[2]
     r[1] -=  yp[1]
     r[3]  =  y[1] + y[2] + y[3] - 1.0
 end
 
-function testjac(t,u,du,res)
+function testjac(res,du,u,p,t)
   res[1] = du[1] - 1.5 * u[1] + 1.0 * u[1]*u[2]
   res[2] = du[2] +3 * u[2] - u[1]*u[2]
 end
 
 jac_called = false
-function testjac(::Type{Val{:jac}},t,u,du,gamma,J)
+function testjac(::Type{Val{:jac}},J,du,u,p,gamma,t)
   global jac_called
   jac_called = true
   J[1,1] = gamma - 1.5 + 1.0 * u[2]
@@ -114,7 +114,7 @@ let
     @test maximum(sol[end]) < 2 #should be cyclic
 
     # inconsistent initial conditions
-    function f!(t, u, du, res)
+    function f!(res,du,u,p,t)
         res[1] = du[1]-1.01
         return
     end
@@ -125,12 +125,12 @@ let
     sol = solve(dae_prob,daskr())
 
     # Jacobian
-    function f2!(t, u, du, res)
+    function f2!(res,du,u,p,t)
         res[1] = 1.01du[1]
         return
     end
 
-    function f2!(::Type{Val{:jac}},t,u,du,gamma,out)
+    function f2!(::Type{Val{:jac}},out,du,u,p,gamma,t)
         global jac_called
         jac_called = true
         out[1] = 1.01

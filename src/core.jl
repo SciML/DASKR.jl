@@ -18,6 +18,7 @@ function res_c(fun)
               Ptr{Int32}, Ptr{Float64}, Ptr{Int32}))
 end
 
+
 """
 Return a C-style callback for the event-handling function `fun`. Suitable for use with `unsafe_solve`.
 """
@@ -58,9 +59,28 @@ function jac_c(fun)
 end
 
 """
+Return a C-style callback for the residual function `fun`. Suitable for use with `unsafe_solve`.
+"""
+function common_res_c(fun,p)
+    newfun = function(t, y, yp, cj, delta, ires, rpar, ipar)
+        n = convert(Array{Int}, unsafe_wrap(Array, ipar, (3,)))
+        t = unsafe_wrap(Array, t, (1,))
+        y = unsafe_wrap(Array, y, (n[1],))
+        yp = unsafe_wrap(Array, yp, (n[1],))
+        delta = unsafe_wrap(Array, delta, (n[1],))
+        fun(delta,yp,y,p,first(t))
+        return nothing
+    end
+    cfunction(newfun, Void,
+             # T, Y, YPRIME, CJ, DELTA, IRES, RPAR, IPAR
+             (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64},
+              Ptr{Int32}, Ptr{Float64}, Ptr{Int32}))
+end
+
+"""
 Return a C-style callback for the Jacobian function `fun`. Suitable for use with `unsafe_solve`. For a common interface passed function.
 """
-function common_jac_c(fun)
+function common_jac_c(fun,p)
     newfun = function(t, y, yp, pd, cj, rpar, ipar)
         n = convert(Array{Int}, unsafe_wrap(Array, ipar, (3,)))
         _t = unsafe_wrap(Array, t, (1,))
@@ -68,7 +88,7 @@ function common_jac_c(fun)
         _yp = unsafe_wrap(Array, yp, (n[1],))
         _pd = unsafe_wrap(Array, pd, (n[3], n[1]))
         _cj = unsafe_wrap(Array, cj, (1,))
-        fun(Val{:jac},first(_t), _y, _yp, first(_cj[1]), _pd)
+        fun(Val{:jac},_pd,_yp,_y,p,first(_cj[1]),first(_t))
         return nothing
     end
     cfunction(newfun, Void,

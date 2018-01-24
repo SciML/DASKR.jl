@@ -120,14 +120,13 @@ function solve{uType,duType,tType,isinplace,LinearSolver}(
 
     ### Fix the more general function to DASKR allowed style
     if !isinplace && (typeof(prob.u0)<:Vector{Float64} || typeof(prob.u0)<:Number)
-        f! = (t,u,du,out) -> (out[:] = prob.f(t,u,du); nothing)
+        f! = (out,du,u,p,t) -> (out[:] = prob.f(du,u,p,t); nothing)
     elseif !isinplace && typeof(prob.u0)<:AbstractArray
-        f! = (t,u,du,out) -> (out[:] = vec(prob.f(t,reshape(u,sizeu),reshape(du,sizedu))); nothing)
+        f! = (out,du,u,p,t) -> (out[:] = vec(prob.f(reshape(du,sizedu),reshape(u,sizeu),p,t)); nothing)
     elseif typeof(prob.u0)<:Vector{Float64}
         f! = prob.f
     else # Then it's an in-place function on an abstract array
-        f! = (t,u,du,out) -> (prob.f(t,reshape(u,sizeu),reshape(du,sizedu),out);
-                              u = vec(u); du=vec(du); 0)
+        f! = (out,du,u,p,t) -> (prob.f(out,reshape(du,sizedu),reshape(u,sizeu),p,t); 0)
     end
 
     if prob.differential_vars == nothing
@@ -159,7 +158,7 @@ function solve{uType,duType,tType,isinplace,LinearSolver}(
     lrw = Int32[N[1]^3 + 9 * N[1] + 60 + 3 * nrt[1]]
     rwork = zeros(lrw[1])
 
-    liw = Int32[2*N[1] + 40] 
+    liw = Int32[2*N[1] + 40]
     iwork = zeros(Int32, liw[1])
     iwork[1] = alg.jac_lower
     iwork[2] = alg.jac_upper
@@ -205,11 +204,11 @@ function solve{uType,duType,tType,isinplace,LinearSolver}(
 
     jroot = zeros(Int32, max(nrt[1], 1))
     ipar = Int32[length(u0), nrt[1], length(u0)]
-    res = DASKR.res_c(f!)
+    res = DASKR.common_res_c(f!,prob.p)
     rt = Int32[0]
 
     if has_jac(f!)
-      jac = common_jac_c(f!)
+      jac = common_jac_c(f!,prob.p)
       info[5] = 1 # Enables Jacobian
     else
       jac = Int32[0]
