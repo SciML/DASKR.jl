@@ -80,14 +80,15 @@ end
 let
     u0 = [1.0, 0, 0]
     du0 = [-0.04, 0.04, 0.0]
-    prob = DAEProblem(resrob,u0,du0,(0.0,100000.0))
+    prob = DAEProblem(resrob,du0,u0,(0.0,100000.0))
     dt = 1000
     saveat = float(collect(0:dt:100000))
     sol = solve(prob, daskr())
     @test length(sol.t) > 2
     sol = solve(prob, daskr(),save_everystep=false)
     @test length(sol.u) == length(sol.t) == 2
-    prob2 = DAEProblem(resrob,u0,du0,(0.0,100000.0),differential_vars = [true, true, false])
+    prob2 = DAEProblem(resrob,du0,u0,(0.0,100000.0),
+                       differential_vars = [true, true, false])
     sol = solve(prob2, daskr(), saveat = saveat)
     @test sol.t == saveat
     sol = solve(prob2, daskr(), saveat = dt)
@@ -99,17 +100,21 @@ let
     @test intersect(sol.t, saveat) == saveat
 
     # Test for callback
-    @test_throws ErrorException solve(prob, daskr(), saveat = saveat, save_everystep = true,
+    @test_throws ErrorException solve(prob, daskr(), saveat = saveat,
+                                      save_everystep = true,
                                       callback = (()->true))
 
     # Check for warnings
     sol = solve(prob, daskr(), saveat = saveat, save_everystep = true,
-                verbose = true, save_idxs = true, d_discontinuities = true, isoutofdomain = true,
-                unstable_check = true, calck = true, progress = true, timeseries_steps = [1,2,3],
+                verbose = true, save_idxs = true, d_discontinuities = true,
+                isoutofdomain = true,
+                unstable_check = true, calck = true, progress = true,
+                timeseries_steps = [1,2,3],
                 dtmin = 1, dtmax = 2, dense=true,
-                internalnorm=0, gamma = 0.5, beta1 = 1.23, beta2 = 2.34,  qmin=1.0, qmax=2.0)
+                internalnorm=0, gamma = 0.5, beta1 = 1.23, beta2 = 2.34,
+                qmin=1.0, qmax=2.0)
 
-    prob3 = DAEProblem(testjac,ones(2),[0.5,-2.0],(0.0,10.0))
+    prob3 = DAEProblem(testjac,[0.5,-2.0],ones(2),(0.0,10.0))
     sol = solve(prob3, daskr())
     @test maximum(sol[end]) < 2 #should be cyclic
 
@@ -121,7 +126,7 @@ let
     u0 = [0.]
     tspan = (0.0, 10.)
     du0 = [0.]
-    dae_prob = DAEProblem(f!,u0,du0,tspan, differential_vars=[true])
+    dae_prob = DAEProblem(f!,du0, u0,tspan, differential_vars=[true])
     sol = solve(dae_prob,daskr())
 
     # Jacobian
@@ -138,7 +143,7 @@ let
     u0 = [0.]
     tspan = (0.0, 10.)
     du0 = [0.]
-    dae_prob = DAEProblem(f2!,u0,du0,tspan, differential_vars=[true])
+    dae_prob = DAEProblem(f2!,du0, u0,tspan, differential_vars=[true])
     sol = solve(dae_prob,daskr())
     @test jac_called
     nothing
