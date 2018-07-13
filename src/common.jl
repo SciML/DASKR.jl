@@ -53,7 +53,7 @@ function solve{uType,duType,tType,isinplace,LinearSolver}(
     callback = nothing, abstol = 1/10^6, reltol = 1/10^3,
     saveat = Float64[], adaptive = true, maxiters = Int(1e5),
     timeseries_errors = true, save_everystep = isempty(saveat), 
-    dense = save_everystep && !(typeof(alg) <: FunctionMap) && isempty(saveat),
+    dense = save_everystep && isempty(saveat),
     save_start = save_everystep || isempty(saveat) || typeof(saveat) <: Number ? true : prob.tspan[1] in saveat,
     save_timeseries = nothing, dtmax = nothing,
     userdata = nothing, dt = nothing,
