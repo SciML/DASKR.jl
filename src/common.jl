@@ -5,10 +5,10 @@ using Reexport
 import DiffEqBase: solve
 
 # Abstract Types
-@compat abstract type DASKRDAEAlgorithm{LinearSolver} <: AbstractDAEAlgorithm end
+@compat abstract type DASKRDAEAlgorithm{LinearSolver} <: DiffEqBase.AbstractDAEAlgorithm end
 
 # DAE Algorithms
-immutable daskr{LinearSolver,NNEA,MKI,MKV} <: DASKRDAEAlgorithm{LinearSolver}
+struct daskr{LinearSolver,NNEA,MKI,MKV} <: DASKRDAEAlgorithm{LinearSolver}
     jac_upper::Int
     jac_lower::Int
     max_order::Int
@@ -44,26 +44,28 @@ export daskr
 
 ## Solve for DAEs uses raw_solver
 
-function solve{uType,duType,tType,isinplace,LinearSolver}(
-    prob::AbstractDAEProblem{uType,duType,tType,isinplace},
+function DiffEqBase.solve(
+    prob::DiffEqBase.AbstractDAEProblem{uType,duType,tupType,isinplace},
     alg::DASKRDAEAlgorithm{LinearSolver},
     timeseries = [], ts = [], ks = [];
-
     verbose=true,
     callback = nothing, abstol = 1/10^6, reltol = 1/10^3,
     saveat = Float64[], adaptive = true, maxiters = Int(1e5),
-    timeseries_errors = true, save_everystep = isempty(saveat), 
+    timeseries_errors = true, save_everystep = isempty(saveat),
     dense = save_everystep && isempty(saveat),
-    save_start = save_everystep || isempty(saveat) || typeof(saveat) <: Number ? true : prob.tspan[1] in saveat,
+    save_start = save_everystep || isempty(saveat) || typeof(saveat) <: Number ?
+                 true : prob.tspan[1] in saveat,
     save_timeseries = nothing, dtmax = nothing,
     userdata = nothing, dt = nothing,
-    kwargs...)
+    kwargs...) where {uType,duType,tupType,isinplace,LinearSolver}
+
+    tType = eltype(tupType)
 
     if verbose
         warned = !isempty(kwargs) && check_keywords(alg, kwargs, warnlist)
-        if !(typeof(prob.f) <: AbstractParameterizedFunction)
-            if has_tgrad(prob.f)
-                warn("Explicit t-gradient given to this stiff solver is ignored.")
+        if !(typeof(prob.f) <: DiffEqBase.AbstractParameterizedFunction)
+            if DiffEqBase.has_tgrad(prob.f)
+                @warn("Explicit t-gradient given to this stiff solver is ignored.")
                 warned = true
             end
         end
@@ -164,7 +166,7 @@ function solve{uType,duType,tType,isinplace,LinearSolver}(
     iwork = zeros(Int32, liw[1])
     iwork[1] = alg.jac_lower
     iwork[2] = alg.jac_upper
-    iwork[40 + (1:N[1])] = id
+    iwork[40 .+ (1:N[1])] = id
 
     if dtmax != nothing
         info[7] = 1
@@ -209,7 +211,7 @@ function solve{uType,duType,tType,isinplace,LinearSolver}(
     res = DASKR.common_res_c(f!,prob.p)
     rt = Int32[0]
 
-    if has_jac(f!)
+    if DiffEqBase.has_jac(f!)
       jac = common_jac_c(f!,prob.p)
       info[5] = 1 # Enables Jacobian
     else
@@ -217,8 +219,8 @@ function solve{uType,duType,tType,isinplace,LinearSolver}(
     end
     psol = Int32[0]
 
-    ures = Vector{Vector{Float64}}()
-    dures = Vector{Vector{Float64}}()
+    ures = Vector{Float64}[]
+    dures = Vector{Float64}[]
     save_start ? ts = [t0] : ts = Float64[]
     save_start ? start_idx = 1 : start_idx = 2
     save_start && push!(ures, copy(u0))
@@ -257,7 +259,7 @@ function solve{uType,duType,tType,isinplace,LinearSolver}(
         retcode = :Success
     end
 
-    timeseries = Vector{uType}(0)
+    timeseries = Vector{uType}(undef,0)
     if typeof(prob.u0)<:Number
         for i=start_idx:length(ures)
             push!(timeseries,ures[i][1])
@@ -268,7 +270,7 @@ function solve{uType,duType,tType,isinplace,LinearSolver}(
         end
     end
 
-    build_solution(prob,alg,ts,timeseries,
+    DiffEqBase.build_solution(prob,alg,ts,timeseries,
                    du = dures,
                    dense = dense,
                    timeseries_errors = timeseries_errors,
