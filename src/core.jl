@@ -12,7 +12,7 @@ function res_c(fun)
         fun(first(t), y, yp, delta)
         return nothing
     end
-    cfunction(newfun, Void,
+    @cfunction($newfun, Nothing,
              # T, Y, YPRIME, CJ, DELTA, IRES, RPAR, IPAR
              (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64},
               Ptr{Int32}, Ptr{Float64}, Ptr{Int32}))
@@ -32,7 +32,7 @@ function rt_c(fun)
         fun(first(t), y, yp, rval)
         return nothing
     end
-    cfunction(newfun, Void,
+    @cfunction($newfun, Nothing,
              # T, Y, YPRIME, CJ, DELTA, IRES, RPAR, IPAR
              (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64},
               Ptr{Int32}, Ptr{Float64}, Ptr{Int32}))
@@ -52,7 +52,7 @@ function jac_c(fun)
         fun(first(_t), _y, _yp, _pd, first(_cj[1]))
         return nothing
     end
-    cfunction(newfun, Void,
+    @cfunction($newfun, Nothing,
              # T, Y, YPRIME, PD, CJ, RPAR, IPAR
              (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64},
               Ptr{Float64}, Ptr{Int32}))
@@ -71,7 +71,7 @@ function common_res_c(fun,p)
         fun(delta,yp,y,p,first(t))
         return nothing
     end
-    cfunction(newfun, Void,
+    @cfunction($newfun, Nothing,
              # T, Y, YPRIME, CJ, DELTA, IRES, RPAR, IPAR
              (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64},
               Ptr{Int32}, Ptr{Float64}, Ptr{Int32}))
@@ -91,7 +91,7 @@ function common_jac_c(fun,p)
         fun(Val{:jac},_pd,_yp,_y,p,first(_cj[1]),first(_t))
         return nothing
     end
-    cfunction(newfun, Void,
+    @cfunction($newfun, Nothing,
              # T, Y, YPRIME, PD, CJ, RPAR, IPAR
              (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64},
               Ptr{Float64}, Ptr{Int32}))
@@ -461,7 +461,7 @@ C                       IWORK(1)=ML
 C                       IWORK(2)=MU ****
 C
 C       INFO(7) - You can specify a maximum (absolute value of)
-C              stepsize, so that the code will avoid passing over very
+C              stepsize, so that the code will aNothing passing over very
 C              large regions.
 C
 C          ****  Do you want the code to decide on its own the maximum
@@ -609,7 +609,7 @@ C               (e.g. to examine the computed Y and YPRIME).
 C               If this is done, and if the initialization succeeded
 C               (IDID = 4), you should reset INFO(11) to 0 for the
 C               next call, to prevent the solver from repeating the
-C               initialization (and to avoid an infinite loop).
+C               initialization (and to aNothing an infinite loop).
 C          ****   Do you want to proceed to the integration after
 C                 the initial condition calculation is done ...
 C                 yes - set INFO(14) = 0
@@ -1251,7 +1251,7 @@ C     You cannot change from array to scalar error control or vice
 C     versa (INFO(2)), but you can change the size of the entries of
 C     RTOL or ATOL.  Increasing a tolerance makes the equation easier
 C     to integrate.  Decreasing a tolerance will make the equation
-C     harder to integrate and should generally be avoided.
+C     harder to integrate and should generally be aNothinged.
 C
 C     You can switch from the intermediate-output mode to the
 C     interval mode (INFO(3)) or vice versa at any time.
@@ -1418,12 +1418,12 @@ function unsafe_solve(callback, N, t, y, yp,
           idid, rwork, lrw, iwork,
           liw, rpar, ipar, jac, psol,
           rt, nrt, jroot)
-    ccall(Libdl.dlsym(lib, :ddaskr_), Void,
-          (Ptr{Void}, Ref{Int32}, Ref{Float64}, Ptr{Float64}, Ptr{Float64}, # RES, NEQ, T, Y, YPRIME
+    ccall(Libdl.dlsym(lib, :ddaskr_), Nothing,
+          (Ptr{Nothing}, Ref{Int32}, Ref{Float64}, Ptr{Float64}, Ptr{Float64}, # RES, NEQ, T, Y, YPRIME
            Ptr{Float64}, Ptr{Int32}, Ptr{Float64}, Ptr{Float64},            # TOUT, INFO, RTOL, ATOL
            Ref{Int32}, Ptr{Float64}, Ref{Int32}, Ptr{Int32},                # IDID, RWORK, LRW, IWORK
-           Ref{Int32}, Any, Ptr{Int32}, Ptr{Void}, Ptr{Void},               # LIW, RPAR, IPAR, JAC, PSOL
-           Ptr{Void}, Ptr{Int32}, Ptr{Int32}),                              # RT, NRT, JROOT
+           Ref{Int32}, Any, Ptr{Int32}, Ptr{Nothing}, Ptr{Nothing},               # LIW, RPAR, IPAR, JAC, PSOL
+           Ptr{Nothing}, Ptr{Int32}, Ptr{Int32}),                              # RT, NRT, JROOT
           callback, N, t, y, yp, tout, info, rtol, atol,
           idid, rwork, lrw, iwork, liw, rpar, ipar, jac, psol,
           rt, nrt, jroot)

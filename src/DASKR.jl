@@ -3,6 +3,7 @@ __precompile__()
 module DASKR
 
 using Compat
+using Libdl
 
 include("core.jl")
 include("common.jl")
@@ -18,6 +19,6 @@ const dllname = joinpath(dirname(dirname(@__FILE__)),
 
 function __init__()
     global lib = Libdl.dlopen(dllname)
-    const global warnlist = Set(warnkeywords)
+    global warnlist = Set(warnkeywords)
 end
 end # module

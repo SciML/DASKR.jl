@@ -1,5 +1,5 @@
 using DASKR
-using Base.Test
+using Test
 using DiffEqBase
 
 # Test the raw interface
@@ -38,7 +38,7 @@ let
     rwork = zeros(lrw[1])
     liw = Int32[2*N[1] + 40]
     iwork = zeros(Int32, liw[1])
-    iwork[40 + (1:N[1])] = id
+    iwork[40 .+ (1:N[1])] = id
     jroot = zeros(Int32, max(nrt[1], 1))
     ipar = Int32[length(y), nrt[1], length(y)]
     res = DASKR.res_c(vanderpol)
@@ -67,7 +67,7 @@ function testjac(res,du,u,p,t)
 end
 
 jac_called = false
-function testjac(::Type{Val{:jac}},J,du,u,p,gamma,t)
+function testjac_jac(J,du,u,p,gamma,t)
   global jac_called
   jac_called = true
   J[1,1] = gamma - 1.5 + 1.0 * u[2]
@@ -135,7 +135,7 @@ let
         return
     end
 
-    function f2!(::Type{Val{:jac}},out,du,u,p,gamma,t)
+    function f2_jac!(out,du,u,p,gamma,t)
         global jac_called
         jac_called = true
         out[1] = 1.01
@@ -143,7 +143,8 @@ let
     u0 = [0.]
     tspan = (0.0, 10.)
     du0 = [0.]
-    dae_prob = DAEProblem(f2!,du0, u0,tspan, differential_vars=[true])
+    dae_prob = DAEProblem(DAEFunction(f2!,jac=f2_jac!),
+                          du0, u0,tspan, differential_vars=[true])
     sol = solve(dae_prob,daskr())
     @test jac_called
     nothing
