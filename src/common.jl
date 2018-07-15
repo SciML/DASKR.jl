@@ -5,7 +5,7 @@ using Reexport
 import DiffEqBase: solve
 
 # Abstract Types
-@compat abstract type DASKRDAEAlgorithm{LinearSolver} <: DiffEqBase.AbstractDAEAlgorithm end
+abstract type DASKRDAEAlgorithm{LinearSolver} <: DiffEqBase.AbstractDAEAlgorithm end
 
 # DAE Algorithms
 struct daskr{LinearSolver,NNEA,MKI,MKV} <: DASKRDAEAlgorithm{LinearSolver}
