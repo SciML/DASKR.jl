@@ -15,7 +15,7 @@ const warnkeywords =
 
 const dllname = joinpath(dirname(dirname(@__FILE__)),
                          "deps",
-                         is_windows() ? "daskr$(Sys.WORD_SIZE)" : "daskr")
+                         Sys.iswindows() ? "daskr$(Sys.WORD_SIZE)" : "daskr")
 
 function __init__()
     global lib = Libdl.dlopen(dllname)
