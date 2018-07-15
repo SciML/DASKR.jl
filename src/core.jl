@@ -88,7 +88,7 @@ function common_jac_c(fun,p)
         _yp = unsafe_wrap(Array, yp, (n[1],))
         _pd = unsafe_wrap(Array, pd, (n[3], n[1]))
         _cj = unsafe_wrap(Array, cj, (1,))
-        fun(Val{:jac},_pd,_yp,_y,p,first(_cj[1]),first(_t))
+        fun.jac(_pd,_yp,_y,p,first(_cj[1]),first(_t))
         return nothing
     end
     @cfunction($newfun, Nothing,
