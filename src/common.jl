@@ -56,7 +56,7 @@ function DiffEqBase.solve(
     save_start = save_everystep || isempty(saveat) || typeof(saveat) <: Number ?
                  true : prob.tspan[1] in saveat,
     save_timeseries = nothing, dtmax = nothing,
-    userdata = nothing, dt = nothing,
+    userdata = nothing, dt = nothing, alias_u0=false,
     kwargs...) where {uType,duType,tupType,isinplace,LinearSolver}
 
     tType = eltype(tupType)
@@ -110,13 +110,21 @@ function DiffEqBase.solve(
     if typeof(prob.u0) <: Number
         u0 = [prob.u0]
     else
-        u0 = vec(deepcopy(prob.u0))
+        if alias_u0
+            u0 = vec(prob.u0)
+        else
+            u0 = vec(deepcopy(prob.u0))
+        end
     end
 
     if typeof(prob.du0) <: Number
         du0 = [prob.du0]
     else
-        du0 = vec(deepcopy(prob.du0))
+        if alias_u0
+            du0 = vec(prob.du0)
+        else
+            du0 = vec(deepcopy(prob.du0))
+        end
     end
 
     sizeu = size(prob.u0)
@@ -226,8 +234,13 @@ function DiffEqBase.solve(
     save_start && push!(ures, copy(u0))
     save_start && dense && push!(dures, copy(du0))
 
-    u = copy(u0)
-    du = copy(du0)
+    if alias_u0
+        u = u0
+        du = du0
+    else
+        u = copy(u0)
+        du = copy(du0)
+    end
     # The Inner Loops : Style depends on save_timeseries
     for k in start_idx:length(save_ts)
         tout = [save_ts[k]]
