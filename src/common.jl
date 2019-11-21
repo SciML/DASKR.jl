@@ -72,7 +72,7 @@ function DiffEqBase.solve(
         warned && warn_compat()
     end
 
-    if callback != nothing || prob.callback != nothing
+    if callback != nothing || :callback in keys(prob.kwargs)
         error("DASKR is not compatible with callbacks.")
     end
 
