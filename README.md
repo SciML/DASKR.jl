@@ -32,4 +32,4 @@ prob = DAEProblem(resrob,u0,du0,tspan)
 sol = solve(prob, daskr())
 ```
 
-The options for `solve` are documented [at the common solver options page](http://docs.juliadiffeq.org/latest/basics/common_solver_opts.html). For more details, see the [ODE Tutorial](http://docs.juliadiffeq.org/latest/tutorials/ode_example.html) and the [DAE Tutorial](http://docs.juliadiffeq.org/latest/tutorials/dae_example.html) pages from DifferentialEquations.jl.
+The options for `solve` are documented [at the common solver options page](http://docs.juliadiffeq.org/dev/basics/common_solver_opts.html). For more details, see the [ODE Tutorial](http://docs.juliadiffeq.org/dev/tutorials/ode_example.html) and the [DAE Tutorial](http://docs.juliadiffeq.org/dev/tutorials/dae_example.html) pages from DifferentialEquations.jl.
