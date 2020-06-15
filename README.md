@@ -33,3 +33,41 @@ sol = solve(prob, daskr())
 ```
 
 The options for `solve` are documented [at the common solver options page](http://docs.juliadiffeq.org/dev/basics/common_solver_opts.html). For more details, see the [ODE Tutorial](http://docs.juliadiffeq.org/dev/tutorials/ode_example.html) and the [DAE Tutorial](http://docs.juliadiffeq.org/dev/tutorials/dae_example.html) pages from DifferentialEquations.jl.
+
+## Citing
+
+Please cite DifferentialEquations.jl and the original algorithm:
+
+```
+@article{rackauckas2017differentialequations,
+  title={Differentialequations. jl--a performant and feature-rich ecosystem for solving differential equations in julia},
+  author={Rackauckas, Christopher and Nie, Qing},
+  journal={Journal of Open Research Software},
+  volume={5},
+  number={1},
+  year={2017},
+  publisher={Ubiquity Press}
+}
+
+@article{brown1994using,
+  title={Using Krylov methods in the solution of large-scale differential-algebraic systems},
+  author={Brown, Peter N and Hindmarsh, Alan C and Petzold, Linda R},
+  journal={SIAM Journal on Scientific Computing},
+  volume={15},
+  number={6},
+  pages={1467--1488},
+  year={1994},
+  publisher={SIAM}
+}
+
+@article{brown1998consistent,
+  title={Consistent initial condition calculation for differential-algebraic systems},
+  author={Brown, Peter N and Hindmarsh, Alan C and Petzold, Linda R},
+  journal={SIAM Journal on Scientific Computing},
+  volume={19},
+  number={5},
+  pages={1495--1512},
+  year={1998},
+  publisher={SIAM}
+}
+```
