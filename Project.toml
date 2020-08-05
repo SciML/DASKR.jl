@@ -1,6 +1,6 @@
 name = "DASKR"
 uuid = "165a45c3-f624-5814-8e85-3bdf39a7becd"
-version = "2.5.0"
+version = "2.6.0"
 
 [deps]
 Compat = "34da2185-b29b-5c13-b0c7-acf172513d20"
