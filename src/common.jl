@@ -44,7 +44,7 @@ export daskr
 
 ## Solve for DAEs uses raw_solver
 
-function DiffEqBase.solve(
+function DiffEqBase.__solve(
     prob::DiffEqBase.AbstractDAEProblem{uType,duType,tupType,isinplace},
     alg::DASKRDAEAlgorithm{LinearSolver},
     timeseries = [], ts = [], ks = [];
