@@ -2,7 +2,7 @@
 
 [![Join the chat at https://gitter.im/JuliaDiffEq/Lobby](https://badges.gitter.im/JuliaDiffEq/Lobby.svg)](https://gitter.im/JuliaDiffEq/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-[![Build Status](https://travis-ci.com/SciML/DASKR.jl.svg?branch=master)](https://travis-ci.com/SciML/DASKR.jl)
+[![Build Status](https://github.com/SciML/DASKR.jl/workflows/CI/badge.svg)](https://github.com/SciML/DASKR.jl/actions?query=workflow%3ACI)
 [![Coverage Status](https://coveralls.io/repos/github/JuliaDiffEq/DASKR.jl/badge.svg)](https://coveralls.io/github/JuliaDiffEq/DASKR.jl)
 [![codecov.io](http://codecov.io/github/SciML/DASKR.jl/coverage.svg?branch=master)](http://codecov.io/github/SciML/DASKR.jl?branch=master)
 
