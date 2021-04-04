@@ -3,6 +3,7 @@ __precompile__()
 module DASKR
 
 using Compat
+using DASKR_jll
 using Libdl
 
 include("core.jl")
@@ -13,12 +14,8 @@ const warnkeywords =
      :calck, :progress, :dtmin,
      :internalnorm, :gamma, :beta1, :beta2, :qmax, :qmin, :qoldinit)
 
-const dllname = joinpath(dirname(dirname(@__FILE__)),
-                         "deps",
-                         Sys.iswindows() ? "daskr$(Sys.WORD_SIZE)" : "daskr")
-
 function __init__()
-    global lib = Libdl.dlopen(dllname)
+    global lib = Libdl.dlopen(libdaskr)
     global warnlist = Set(warnkeywords)
 end
 end # module

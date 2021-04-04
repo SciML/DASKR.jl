@@ -72,7 +72,7 @@ function DiffEqBase.__solve(
         warned && warn_compat()
     end
 
-    if callback != nothing || :callback in keys(prob.kwargs)
+    if callback !== nothing || :callback in keys(prob.kwargs)
         error("DASKR is not compatible with callbacks.")
     end
 
@@ -141,7 +141,7 @@ function DiffEqBase.__solve(
         f! = (out,du,u,p,t) -> (prob.f(out,reshape(du,sizedu),reshape(u,sizeu),p,t); 0)
     end
 
-    if prob.differential_vars == nothing
+    if prob.differential_vars === nothing
         id = ones(Int32,length(u0))
     else
         id = Int32[x ? 1 : -1 for x in prob.differential_vars]
@@ -176,12 +176,12 @@ function DiffEqBase.__solve(
     iwork[2] = alg.jac_upper
     iwork[40 .+ (1:N[1])] = id
 
-    if dtmax != nothing
+    if dtmax !== nothing
         info[7] = 1
         rwork[2] = dtmax
     end
 
-    if dt != nothing
+    if dt !== nothing
         info[8] = 1
         rwork[3] = dt
     end
@@ -198,10 +198,10 @@ function DiffEqBase.__solve(
 
     if LinearSolver == :SPIGMR
         info[12] = 1
-        if alg.max_krylov_iters != nothing
+        if alg.max_krylov_iters !== nothing
             iwork[24] = alg.max_krylov_iters
         end
-        if alg.num_krylov_vectors != nothing
+        if alg.num_krylov_vectors !== nothing
             iwork[25] = alg.num_krylov_vectors
         end
         iwork[26] = alg.max_number_krylov_restarts

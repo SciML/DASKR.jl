@@ -105,6 +105,7 @@ let
                                       callback = (()->true))
 
     # Check for warnings
+    @info "Testing for Compatibility Warnings"
     sol = solve(prob, daskr(), saveat = saveat, save_everystep = true,
                 verbose = true, save_idxs = true, d_discontinuities = true,
                 isoutofdomain = true,
