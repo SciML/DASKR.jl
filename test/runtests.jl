@@ -110,7 +110,6 @@ let
                 verbose = true, save_idxs = true, d_discontinuities = true,
                 isoutofdomain = true,
                 unstable_check = true, calck = true, progress = true,
-                timeseries_steps = [1,2,3],
                 dtmin = 1, dtmax = 2, dense=true,
                 internalnorm=0, gamma = 0.5, beta1 = 1.23, beta2 = 2.34,
                 qmin=1.0, qmax=2.0)
