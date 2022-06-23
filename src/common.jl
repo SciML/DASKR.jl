@@ -8,7 +8,7 @@ import DiffEqBase: solve
 abstract type DASKRDAEAlgorithm{LinearSolver} <: DiffEqBase.AbstractDAEAlgorithm end
 
 # DAE Algorithms
-struct daskr{LinearSolver,NNEA,MKI,MKV} <: DASKRDAEAlgorithm{LinearSolver}
+struct daskr{LinearSolver, NNEA, MKI, MKV} <: DASKRDAEAlgorithm{LinearSolver}
     jac_upper::Int
     jac_lower::Int
     max_order::Int
@@ -20,45 +20,47 @@ struct daskr{LinearSolver,NNEA,MKI,MKV} <: DASKRDAEAlgorithm{LinearSolver}
     krylov_convergence_test_constant::Float64
     exclude_algebraic_errors::Bool
 end
-Base.@pure function daskr(;linear_solver=:Dense,
-                  jac_upper=0,jac_lower=0,max_order = 5,
-                  non_negativity_enforcement = 0,
-                  non_negativity_enforcement_array = nothing,
-                  max_krylov_iters = nothing,
-                  num_krylov_vectors = nothing,
-                  max_number_krylov_restarts = 5,
-                  krylov_convergence_test_constant = 0.05,
-                  exclude_algebraic_errors = false)
-    daskr{linear_solver,typeof(non_negativity_enforcement_array),
-          typeof(max_krylov_iters),typeof(num_krylov_vectors)}(
-          jac_upper,jac_lower,max_order,non_negativity_enforcement,
-                         non_negativity_enforcement_array,
-                         max_krylov_iters,
-                         num_krylov_vectors,
-                         max_number_krylov_restarts,
-                         krylov_convergence_test_constant,
-                         exclude_algebraic_errors)
+Base.@pure function daskr(; linear_solver = :Dense,
+                          jac_upper = 0, jac_lower = 0, max_order = 5,
+                          non_negativity_enforcement = 0,
+                          non_negativity_enforcement_array = nothing,
+                          max_krylov_iters = nothing,
+                          num_krylov_vectors = nothing,
+                          max_number_krylov_restarts = 5,
+                          krylov_convergence_test_constant = 0.05,
+                          exclude_algebraic_errors = false)
+    daskr{linear_solver, typeof(non_negativity_enforcement_array),
+          typeof(max_krylov_iters), typeof(num_krylov_vectors)}(jac_upper, jac_lower,
+                                                                max_order,
+                                                                non_negativity_enforcement,
+                                                                non_negativity_enforcement_array,
+                                                                max_krylov_iters,
+                                                                num_krylov_vectors,
+                                                                max_number_krylov_restarts,
+                                                                krylov_convergence_test_constant,
+                                                                exclude_algebraic_errors)
 end
 
 export daskr
 
 ## Solve for DAEs uses raw_solver
 
-function DiffEqBase.__solve(
-    prob::DiffEqBase.AbstractDAEProblem{uType,duType,tupType,isinplace},
-    alg::DASKRDAEAlgorithm{LinearSolver},
-    timeseries = [], ts = [], ks = [];
-    verbose=true,
-    callback = nothing, abstol = 1/10^6, reltol = 1/10^3,
-    saveat = Float64[], adaptive = true, maxiters = Int(1e5),
-    timeseries_errors = true, save_everystep = isempty(saveat),
-    dense = save_everystep && isempty(saveat),
-    save_start = save_everystep || isempty(saveat) || typeof(saveat) <: Number ?
-                 true : prob.tspan[1] in saveat,
-    save_timeseries = nothing, dtmax = nothing,
-    userdata = nothing, dt = nothing, alias_u0=false,
-    kwargs...) where {uType,duType,tupType,isinplace,LinearSolver}
-
+function DiffEqBase.__solve(prob::DiffEqBase.AbstractDAEProblem{uType, duType, tupType,
+                                                                isinplace},
+                            alg::DASKRDAEAlgorithm{LinearSolver},
+                            timeseries = [], ts = [], ks = [];
+                            verbose = true,
+                            callback = nothing, abstol = 1 / 10^6, reltol = 1 / 10^3,
+                            saveat = Float64[], adaptive = true, maxiters = Int(1e5),
+                            timeseries_errors = true, save_everystep = isempty(saveat),
+                            dense = save_everystep && isempty(saveat),
+                            save_start = save_everystep || isempty(saveat) ||
+                                             typeof(saveat) <: Number ?
+                                         true : prob.tspan[1] in saveat,
+                            save_timeseries = nothing, dtmax = nothing,
+                            userdata = nothing, dt = nothing, alias_u0 = false,
+                            kwargs...) where {uType, duType, tupType, isinplace,
+                                              LinearSolver}
     tType = eltype(tupType)
 
     if verbose
@@ -82,12 +84,15 @@ function DiffEqBase.__solve(
 
     if typeof(saveat) <: Number
         if (tspan[1]:saveat:tspan[end])[end] == tspan[end]
-          saveat_vec = convert(Vector{tType},collect(tType,tspan[1]+saveat:saveat:tspan[end]))
+            saveat_vec = convert(Vector{tType},
+                                 collect(tType, (tspan[1] + saveat):saveat:tspan[end]))
         else
-          saveat_vec = convert(Vector{tType},collect(tType,tspan[1]+saveat:saveat:(tspan[end]-saveat)))
+            saveat_vec = convert(Vector{tType},
+                                 collect(tType,
+                                         (tspan[1] + saveat):saveat:(tspan[end] - saveat)))
         end
     else
-        saveat_vec =  convert(Vector{tType},collect(saveat))
+        saveat_vec = convert(Vector{tType}, collect(saveat))
     end
 
     if !isempty(saveat_vec) && saveat_vec[end] == tspan[2]
@@ -95,9 +100,9 @@ function DiffEqBase.__solve(
     end
 
     if !isempty(saveat_vec) && saveat_vec[1] == tspan[1]
-        save_ts = sort(unique([saveat_vec[2:end];tspan[2]]))
+        save_ts = sort(unique([saveat_vec[2:end]; tspan[2]]))
     else
-        save_ts = sort(unique([saveat_vec;tspan[2]]))
+        save_ts = sort(unique([saveat_vec; tspan[2]]))
     end
 
     if T < save_ts[end]
@@ -131,18 +136,22 @@ function DiffEqBase.__solve(
     sizedu = size(prob.du0)
 
     ### Fix the more general function to DASKR allowed style
-    if !isinplace && (typeof(prob.u0)<:Vector{Float64} || typeof(prob.u0)<:Number)
-        f! = (out,du,u,p,t) -> (out[:] = prob.f(du,u,p,t); nothing)
-    elseif !isinplace && typeof(prob.u0)<:AbstractArray
-        f! = (out,du,u,p,t) -> (out[:] = vec(prob.f(reshape(du,sizedu),reshape(u,sizeu),p,t)); nothing)
-    elseif typeof(prob.u0)<:Vector{Float64}
+    if !isinplace && (typeof(prob.u0) <: Vector{Float64} || typeof(prob.u0) <: Number)
+        f! = (out, du, u, p, t) -> (out[:] = prob.f(du, u, p, t); nothing)
+    elseif !isinplace && typeof(prob.u0) <: AbstractArray
+        f! = (out, du, u, p, t) -> (out[:] = vec(prob.f(reshape(du, sizedu),
+                                                        reshape(u, sizeu), p, t));
+                                    nothing)
+    elseif typeof(prob.u0) <: Vector{Float64}
         f! = prob.f
     else # Then it's an in-place function on an abstract array
-        f! = (out,du,u,p,t) -> (prob.f(out,reshape(du,sizedu),reshape(u,sizeu),p,t); 0)
+        f! = (out, du, u, p, t) -> (prob.f(out, reshape(du, sizedu), reshape(u, sizeu), p,
+                                           t);
+                                    0)
     end
 
     if prob.differential_vars === nothing
-        id = ones(Int32,length(u0))
+        id = ones(Int32, length(u0))
     else
         id = Int32[x ? 1 : -1 for x in prob.differential_vars]
     end
@@ -170,7 +179,7 @@ function DiffEqBase.__solve(
     lrw = Int32[N[1]^3 + 9 * N[1] + 60 + 3 * nrt[1]]
     rwork = zeros(lrw[1])
 
-    liw = Int32[2*N[1] + 40]
+    liw = Int32[2 * N[1] + 40]
     iwork = zeros(Int32, liw[1])
     iwork[1] = alg.jac_lower
     iwork[2] = alg.jac_upper
@@ -212,18 +221,18 @@ function DiffEqBase.__solve(
         info[16] = 1
     end
 
-    liw = Int32[2*N[1] + 40]
+    liw = Int32[2 * N[1] + 40]
 
     jroot = zeros(Int32, max(nrt[1], 1))
     ipar = Int32[length(u0), nrt[1], length(u0)]
-    res = DASKR.common_res_c(f!,prob.p)
+    res = DASKR.common_res_c(f!, prob.p)
     rt = Int32[0]
 
     if DiffEqBase.has_jac(f!)
-      jac = common_jac_c(f!,prob.p)
-      info[5] = 1 # Enables Jacobian
+        jac = common_jac_c(f!, prob.p)
+        info[5] = 1 # Enables Jacobian
     else
-      jac = Int32[0]
+        jac = Int32[0]
     end
     psol = Int32[0]
 
@@ -250,9 +259,9 @@ function DiffEqBase.__solve(
             if idid[1] < 0
                 break
             end
-            push!(ures,copy(u))
+            push!(ures, copy(u))
             push!(ts, t[1])
-            dense && push!(dures,copy(du))
+            dense && push!(dures, copy(du))
         end
         if idid[1] < 0
             break
@@ -272,20 +281,20 @@ function DiffEqBase.__solve(
         retcode = :Success
     end
 
-    timeseries = Vector{uType}(undef,0)
-    if typeof(prob.u0)<:Number
-        for i=start_idx:length(ures)
-            push!(timeseries,ures[i][1])
+    timeseries = Vector{uType}(undef, 0)
+    if typeof(prob.u0) <: Number
+        for i in start_idx:length(ures)
+            push!(timeseries, ures[i][1])
         end
     else
-        for i=start_idx:length(ures)
-            push!(timeseries,reshape(ures[i],sizeu))
+        for i in start_idx:length(ures)
+            push!(timeseries, reshape(ures[i], sizeu))
         end
     end
 
-    DiffEqBase.build_solution(prob,alg,ts,timeseries,
-                   du = dures,
-                   dense = dense,
-                   timeseries_errors = timeseries_errors,
-                   retcode = retcode)
+    DiffEqBase.build_solution(prob, alg, ts, timeseries,
+                              du = dures,
+                              dense = dense,
+                              timeseries_errors = timeseries_errors,
+                              retcode = retcode)
 end
