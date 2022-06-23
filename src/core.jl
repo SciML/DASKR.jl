@@ -3,7 +3,7 @@
 Return a C-style callback for the residual function `fun`. Suitable for use with `unsafe_solve`.
 """
 function res_c(fun)
-    newfun = function(t, y, yp, cj, delta, ires, rpar, ipar)
+    newfun = function (t, y, yp, cj, delta, ires, rpar, ipar)
         n = convert(Array{Int}, unsafe_wrap(Array, ipar, (3,)))
         t = unsafe_wrap(Array, t, (1,))
         y = unsafe_wrap(Array, y, (n[1],))
@@ -13,17 +13,16 @@ function res_c(fun)
         return nothing
     end
     @cfunction($newfun, Nothing,
-             # T, Y, YPRIME, CJ, DELTA, IRES, RPAR, IPAR
-             (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64},
-              Ptr{Int32}, Ptr{Float64}, Ptr{Int32}))
+               # T, Y, YPRIME, CJ, DELTA, IRES, RPAR, IPAR
+               (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64},
+                Ptr{Int32}, Ptr{Float64}, Ptr{Int32}))
 end
-
 
 """
 Return a C-style callback for the event-handling function `fun`. Suitable for use with `unsafe_solve`.
 """
 function rt_c(fun)
-    newfun = function(neq, t, y, yp, nrt, rval, rpar, ipar)
+    newfun = function (neq, t, y, yp, nrt, rval, rpar, ipar)
         n = convert(Array{Int}, unsafe_wrap(Array, ipar, (3,)))
         t = unsafe_wrap(Array, t, (1,))
         y = unsafe_wrap(Array, y, (n[1],))
@@ -33,16 +32,16 @@ function rt_c(fun)
         return nothing
     end
     @cfunction($newfun, Nothing,
-             # T, Y, YPRIME, CJ, DELTA, IRES, RPAR, IPAR
-             (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64},
-              Ptr{Int32}, Ptr{Float64}, Ptr{Int32}))
+               # T, Y, YPRIME, CJ, DELTA, IRES, RPAR, IPAR
+               (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64},
+                Ptr{Int32}, Ptr{Float64}, Ptr{Int32}))
 end
 
 """
 Return a C-style callback for the Jacobian function `fun`. Suitable for use with `unsafe_solve`.
 """
 function jac_c(fun)
-    newfun = function(t, y, yp, pd, cj, rpar, ipar)
+    newfun = function (t, y, yp, pd, cj, rpar, ipar)
         n = convert(Array{Int}, unsafe_wrap(Array, ipar, (3,)))
         _t = unsafe_wrap(Array, t, (1,))
         _y = unsafe_wrap(Array, y, (n[1],))
@@ -53,48 +52,48 @@ function jac_c(fun)
         return nothing
     end
     @cfunction($newfun, Nothing,
-             # T, Y, YPRIME, PD, CJ, RPAR, IPAR
-             (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64},
-              Ptr{Float64}, Ptr{Int32}))
+               # T, Y, YPRIME, PD, CJ, RPAR, IPAR
+               (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64},
+                Ptr{Float64}, Ptr{Int32}))
 end
 
 """
 Return a C-style callback for the residual function `fun`. Suitable for use with `unsafe_solve`.
 """
-function common_res_c(fun,p)
-    newfun = function(t, y, yp, cj, delta, ires, rpar, ipar)
+function common_res_c(fun, p)
+    newfun = function (t, y, yp, cj, delta, ires, rpar, ipar)
         n = convert(Array{Int}, unsafe_wrap(Array, ipar, (3,)))
         t = unsafe_wrap(Array, t, (1,))
         y = unsafe_wrap(Array, y, (n[1],))
         yp = unsafe_wrap(Array, yp, (n[1],))
         delta = unsafe_wrap(Array, delta, (n[1],))
-        fun(delta,yp,y,p,first(t))
+        fun(delta, yp, y, p, first(t))
         return nothing
     end
     @cfunction($newfun, Nothing,
-             # T, Y, YPRIME, CJ, DELTA, IRES, RPAR, IPAR
-             (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64},
-              Ptr{Int32}, Ptr{Float64}, Ptr{Int32}))
+               # T, Y, YPRIME, CJ, DELTA, IRES, RPAR, IPAR
+               (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64},
+                Ptr{Int32}, Ptr{Float64}, Ptr{Int32}))
 end
 
 """
 Return a C-style callback for the Jacobian function `fun`. Suitable for use with `unsafe_solve`. For a common interface passed function.
 """
-function common_jac_c(fun,p)
-    newfun = function(t, y, yp, pd, cj, rpar, ipar)
+function common_jac_c(fun, p)
+    newfun = function (t, y, yp, pd, cj, rpar, ipar)
         n = convert(Array{Int}, unsafe_wrap(Array, ipar, (3,)))
         _t = unsafe_wrap(Array, t, (1,))
         _y = unsafe_wrap(Array, y, (n[1],))
         _yp = unsafe_wrap(Array, yp, (n[1],))
         _pd = unsafe_wrap(Array, pd, (n[3], n[1]))
         _cj = unsafe_wrap(Array, cj, (1,))
-        fun.jac(_pd,_yp,_y,p,first(_cj[1]),first(_t))
+        fun.jac(_pd, _yp, _y, p, first(_cj[1]), first(_t))
         return nothing
     end
     @cfunction($newfun, Nothing,
-             # T, Y, YPRIME, PD, CJ, RPAR, IPAR
-             (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64},
-              Ptr{Float64}, Ptr{Int32}))
+               # T, Y, YPRIME, PD, CJ, RPAR, IPAR
+               (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64},
+                Ptr{Float64}, Ptr{Int32}))
 end
 
 """
@@ -1414,17 +1413,17 @@ C      Systems, SIAM J. Sci. Comp. 19 (1998), pp. 1495-1512.
 ```
 """
 function unsafe_solve(callback, N, t, y, yp,
-          tout, info, rtol, atol,
-          idid, rwork, lrw, iwork,
-          liw, rpar, ipar, jac, psol,
-          rt, nrt, jroot)
-    ccall(Libdl.dlsym(lib, :ddaskr_), Nothing,
-          (Ptr{Nothing}, Ref{Int32}, Ref{Float64}, Ptr{Float64}, Ptr{Float64}, # RES, NEQ, T, Y, YPRIME
-           Ptr{Float64}, Ptr{Int32}, Ptr{Float64}, Ptr{Float64},            # TOUT, INFO, RTOL, ATOL
-           Ref{Int32}, Ptr{Float64}, Ref{Int32}, Ptr{Int32},                # IDID, RWORK, LRW, IWORK
-           Ref{Int32}, Any, Ptr{Int32}, Ptr{Nothing}, Ptr{Nothing},               # LIW, RPAR, IPAR, JAC, PSOL
-           Ptr{Nothing}, Ptr{Int32}, Ptr{Int32}),                              # RT, NRT, JROOT
-          callback, N, t, y, yp, tout, info, rtol, atol,
-          idid, rwork, lrw, iwork, liw, rpar, ipar, jac, psol,
-          rt, nrt, jroot)
+                      tout, info, rtol, atol,
+                      idid, rwork, lrw, iwork,
+                      liw, rpar, ipar, jac, psol,
+                      rt, nrt, jroot)
+    return ccall(Libdl.dlsym(lib, :ddaskr_), Nothing,
+                 (Ptr{Nothing}, Ref{Int32}, Ref{Float64}, Ptr{Float64}, Ptr{Float64}, # RES, NEQ, T, Y, YPRIME
+                  Ptr{Float64}, Ptr{Int32}, Ptr{Float64}, Ptr{Float64},            # TOUT, INFO, RTOL, ATOL
+                  Ref{Int32}, Ptr{Float64}, Ref{Int32}, Ptr{Int32},                # IDID, RWORK, LRW, IWORK
+                  Ref{Int32}, Any, Ptr{Int32}, Ptr{Nothing}, Ptr{Nothing},               # LIW, RPAR, IPAR, JAC, PSOL
+                  Ptr{Nothing}, Ptr{Int32}, Ptr{Int32}),                              # RT, NRT, JROOT
+                 callback, N, t, y, yp, tout, info, rtol, atol,
+                 idid, rwork, lrw, iwork, liw, rpar, ipar, jac, psol,
+                 rt, nrt, jroot)
 end
