@@ -10,7 +10,7 @@ Libdl = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 
 [compat]
-Compat = "2, 3"
+Compat = "2, 3, 4"
 DiffEqBase = "6"
 Reexport = "0.2, 1.0"
 julia = "1.6"
