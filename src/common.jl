@@ -325,15 +325,15 @@ function DiffEqBase.__solve(prob::DiffEqBase.AbstractDAEProblem{uType, duType, t
     ### Finishing Routine
 
     if idid[1] == -1
-        retcode = :MaxIters
+        retcode = ReturnCode.MaxIters
     elseif idid[1] == -7 || idid[1] == -9 || idid[1] == -10 || idid[1] == -14
-        retcode = :ConvergenceFailure
+        retcode = ReturnCode.ConvergenceFailure
     elseif idid[1] == -12
-        retcode = :InitialFailure
+        retcode = ReturnCode.InitialFailure
     elseif idid[1] < 0
-        retcode = :Failure
+        retcode = ReturnCode.Failure
     else
-        retcode = :Success
+        retcode = ReturnCode.Success
     end
 
     timeseries = Vector{uType}(undef, 0)
