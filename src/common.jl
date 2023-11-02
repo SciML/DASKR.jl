@@ -110,7 +110,7 @@ function DiffEqBase.__solve(prob::DiffEqBase.AbstractDAEProblem{uType, duType, t
                             timeseries_errors = true, save_everystep = isempty(saveat),
                             dense = save_everystep && isempty(saveat),
                             save_start = save_everystep || isempty(saveat) ||
-                                             typeof(saveat) <: Number ?
+                                             saveat isa Number ?
                                          true : prob.tspan[1] in saveat,
                             save_timeseries = nothing, dtmax = nothing,
                             userdata = nothing, dt = nothing, alias_u0 = false,
@@ -120,7 +120,7 @@ function DiffEqBase.__solve(prob::DiffEqBase.AbstractDAEProblem{uType, duType, t
 
     if verbose
         warned = !isempty(kwargs) && check_keywords(alg, kwargs, warnlist)
-        if !(typeof(prob.f) <: DiffEqBase.AbstractParameterizedFunction)
+        if !(prob.f isa DiffEqBase.AbstractParameterizedFunction)
             if DiffEqBase.has_tgrad(prob.f)
                 @warn("Explicit t-gradient given to this stiff solver is ignored.")
                 warned = true
@@ -137,7 +137,7 @@ function DiffEqBase.__solve(prob::DiffEqBase.AbstractDAEProblem{uType, duType, t
     t0 = tspan[1]
     T = tspan[end]
 
-    if typeof(saveat) <: Number
+    if saveat isa Number
         if (tspan[1]:saveat:tspan[end])[end] == tspan[end]
             saveat_vec = convert(Vector{tType},
                                  collect(tType, (tspan[1] + saveat):saveat:tspan[end]))
@@ -167,7 +167,7 @@ function DiffEqBase.__solve(prob::DiffEqBase.AbstractDAEProblem{uType, duType, t
         error("First saving timepoint is before the solving timespan")
     end
 
-    if typeof(prob.u0) <: Number
+    if prob.u0 isa Number
         u0 = [prob.u0]
     else
         if alias_u0
@@ -177,7 +177,7 @@ function DiffEqBase.__solve(prob::DiffEqBase.AbstractDAEProblem{uType, duType, t
         end
     end
 
-    if typeof(prob.du0) <: Number
+    if prob.du0 isa Number
         du0 = [prob.du0]
     else
         if alias_u0
@@ -191,13 +191,13 @@ function DiffEqBase.__solve(prob::DiffEqBase.AbstractDAEProblem{uType, duType, t
     sizedu = size(prob.du0)
 
     ### Fix the more general function to DASKR allowed style
-    if !isinplace && (typeof(prob.u0) <: Vector{Float64} || typeof(prob.u0) <: Number)
+    if !isinplace && (prob.u0 isa Vector{Float64} || prob.u0 isa Number)
         f! = (out, du, u, p, t) -> (out[:] = prob.f(du, u, p, t); nothing)
-    elseif !isinplace && typeof(prob.u0) <: AbstractArray
+    elseif !isinplace && prob.u0 isa AbstractArray
         f! = (out, du, u, p, t) -> (out[:] = vec(prob.f(reshape(du, sizedu),
                                                         reshape(u, sizeu), p, t));
                                     nothing)
-    elseif typeof(prob.u0) <: Vector{Float64}
+    elseif prob.u0 isa Vector{Float64}
         f! = prob.f
     else # Then it's an in-place function on an abstract array
         f! = (out, du, u, p, t) -> (prob.f(out, reshape(du, sizedu), reshape(u, sizeu), p,
@@ -337,7 +337,7 @@ function DiffEqBase.__solve(prob::DiffEqBase.AbstractDAEProblem{uType, duType, t
     end
 
     timeseries = Vector{uType}(undef, 0)
-    if typeof(prob.u0) <: Number
+    if prob.u0 isa Number
         for i in start_idx:length(ures)
             push!(timeseries, ures[i][1])
         end
