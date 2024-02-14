@@ -46,11 +46,11 @@ let
     jac = Int32[0]
     psol = Int32[0]
     DASKR.unsafe_solve(res, N, t, y, yp, tout, info, rtol, atol, idid, rwork, lrw, iwork,
-                       liw, rpar, ipar, jac, psol, rt, nrt, jroot)
+        liw, rpar, ipar, jac, psol, rt, nrt, jroot)
     @show (t, y, yp)
     tout = [5.0]
     DASKR.unsafe_solve(res, N, t, y, yp, tout, info, rtol, atol, idid, rwork, lrw, iwork,
-                       liw, rpar, ipar, jac, psol, rt, nrt, jroot)
+        liw, rpar, ipar, jac, psol, rt, nrt, jroot)
     @show (t, y, yp)
 end
 
@@ -89,31 +89,31 @@ let
     sol = solve(prob, daskr(), save_everystep = false)
     @test length(sol.u) == length(sol.t) == 2
     prob2 = DAEProblem(resrob, du0, u0, (0.0, 100000.0),
-                       differential_vars = [true, true, false])
+        differential_vars = [true, true, false])
     sol = solve(prob2, daskr(), saveat = saveat)
     @test sol.t == saveat
     sol = solve(prob2, daskr(), saveat = dt)
     @test sol.t == saveat
     sol = solve(prob2, daskr(), saveat = saveat,
-                save_everystep = true)
+        save_everystep = true)
     @test minimum([t ∈ sol.t for t in saveat])
     sol = solve(prob, daskr(), saveat = saveat, save_everystep = true)
     @test intersect(sol.t, saveat) == saveat
 
     # Test for callback
     @test_throws ErrorException solve(prob, daskr(), saveat = saveat,
-                                      save_everystep = true,
-                                      callback = (() -> true))
+        save_everystep = true,
+        callback = (() -> true))
 
     # Check for warnings
     @info "Testing for Compatibility Warnings"
     sol = solve(prob, daskr(), saveat = saveat, save_everystep = true,
-                verbose = true, save_idxs = true, d_discontinuities = true,
-                isoutofdomain = true,
-                unstable_check = true, calck = true, progress = true,
-                dtmin = 1, dtmax = 2, dense = true,
-                internalnorm = 0, gamma = 0.5, beta1 = 1.23, beta2 = 2.34,
-                qmin = 1.0, qmax = 2.0)
+        verbose = true, save_idxs = true, d_discontinuities = true,
+        isoutofdomain = true,
+        unstable_check = true, calck = true, progress = true,
+        dtmin = 1, dtmax = 2, dense = true,
+        internalnorm = 0, gamma = 0.5, beta1 = 1.23, beta2 = 2.34,
+        qmin = 1.0, qmax = 2.0)
 
     prob3 = DAEProblem(testjac, [0.5, -2.0], ones(2), (0.0, 10.0))
     sol = solve(prob3, daskr())
@@ -145,7 +145,7 @@ let
     tspan = (0.0, 10.0)
     du0 = [0.0]
     dae_prob = DAEProblem(DAEFunction(f2!, jac = f2_jac!),
-                          du0, u0, tspan, differential_vars = [true])
+        du0, u0, tspan, differential_vars = [true])
     sol = solve(dae_prob, daskr())
     @test jac_called
     nothing

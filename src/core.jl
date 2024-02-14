@@ -12,10 +12,9 @@ function res_c(fun)
         fun(first(t), y, yp, delta)
         return nothing
     end
-    @cfunction($newfun, Nothing,
-               # T, Y, YPRIME, CJ, DELTA, IRES, RPAR, IPAR
-               (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64},
-                Ptr{Int32}, Ptr{Float64}, Ptr{Int32}))
+    @cfunction($newfun, Nothing,        # T, Y, YPRIME, CJ, DELTA, IRES, RPAR, IPAR
+        (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64},
+            Ptr{Int32}, Ptr{Float64}, Ptr{Int32}))
 end
 
 """
@@ -31,10 +30,9 @@ function rt_c(fun)
         fun(first(t), y, yp, rval)
         return nothing
     end
-    @cfunction($newfun, Nothing,
-               # T, Y, YPRIME, CJ, DELTA, IRES, RPAR, IPAR
-               (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64},
-                Ptr{Int32}, Ptr{Float64}, Ptr{Int32}))
+    @cfunction($newfun, Nothing,        # T, Y, YPRIME, CJ, DELTA, IRES, RPAR, IPAR
+        (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64},
+            Ptr{Int32}, Ptr{Float64}, Ptr{Int32}))
 end
 
 """
@@ -51,10 +49,9 @@ function jac_c(fun)
         fun(first(_t), _y, _yp, _pd, first(_cj[1]))
         return nothing
     end
-    @cfunction($newfun, Nothing,
-               # T, Y, YPRIME, PD, CJ, RPAR, IPAR
-               (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64},
-                Ptr{Float64}, Ptr{Int32}))
+    @cfunction($newfun, Nothing,        # T, Y, YPRIME, PD, CJ, RPAR, IPAR
+        (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64},
+            Ptr{Float64}, Ptr{Int32}))
 end
 
 """
@@ -70,10 +67,9 @@ function common_res_c(fun, p)
         fun(delta, yp, y, p, first(t))
         return nothing
     end
-    @cfunction($newfun, Nothing,
-               # T, Y, YPRIME, CJ, DELTA, IRES, RPAR, IPAR
-               (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64},
-                Ptr{Int32}, Ptr{Float64}, Ptr{Int32}))
+    @cfunction($newfun, Nothing,        # T, Y, YPRIME, CJ, DELTA, IRES, RPAR, IPAR
+        (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64},
+            Ptr{Int32}, Ptr{Float64}, Ptr{Int32}))
 end
 
 """
@@ -90,10 +86,9 @@ function common_jac_c(fun, p)
         fun.jac(_pd, _yp, _y, p, first(_cj[1]), first(_t))
         return nothing
     end
-    @cfunction($newfun, Nothing,
-               # T, Y, YPRIME, PD, CJ, RPAR, IPAR
-               (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64},
-                Ptr{Float64}, Ptr{Int32}))
+    @cfunction($newfun, Nothing,        # T, Y, YPRIME, PD, CJ, RPAR, IPAR
+        (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64},
+            Ptr{Float64}, Ptr{Int32}))
 end
 
 """
@@ -1413,17 +1408,17 @@ C      Systems, SIAM J. Sci. Comp. 19 (1998), pp. 1495-1512.
 ```
 """
 function unsafe_solve(callback, N, t, y, yp,
-                      tout, info, rtol, atol,
-                      idid, rwork, lrw, iwork,
-                      liw, rpar, ipar, jac, psol,
-                      rt, nrt, jroot)
+        tout, info, rtol, atol,
+        idid, rwork, lrw, iwork,
+        liw, rpar, ipar, jac, psol,
+        rt, nrt, jroot)
     ccall(Libdl.dlsym(lib, :ddaskr_), Nothing,
-          (Ptr{Nothing}, Ref{Int32}, Ref{Float64}, Ptr{Float64}, Ptr{Float64}, # RES, NEQ, T, Y, YPRIME
-           Ptr{Float64}, Ptr{Int32}, Ptr{Float64}, Ptr{Float64},            # TOUT, INFO, RTOL, ATOL
-           Ref{Int32}, Ptr{Float64}, Ref{Int32}, Ptr{Int32},                # IDID, RWORK, LRW, IWORK
-           Ref{Int32}, Any, Ptr{Int32}, Ptr{Nothing}, Ptr{Nothing},               # LIW, RPAR, IPAR, JAC, PSOL
-           Ptr{Nothing}, Ptr{Int32}, Ptr{Int32}),                              # RT, NRT, JROOT
-          callback, N, t, y, yp, tout, info, rtol, atol,
-          idid, rwork, lrw, iwork, liw, rpar, ipar, jac, psol,
-          rt, nrt, jroot)
+        (Ptr{Nothing}, Ref{Int32}, Ref{Float64}, Ptr{Float64}, Ptr{Float64}, # RES, NEQ, T, Y, YPRIME
+            Ptr{Float64}, Ptr{Int32}, Ptr{Float64}, Ptr{Float64},            # TOUT, INFO, RTOL, ATOL
+            Ref{Int32}, Ptr{Float64}, Ref{Int32}, Ptr{Int32},                # IDID, RWORK, LRW, IWORK
+            Ref{Int32}, Any, Ptr{Int32}, Ptr{Nothing}, Ptr{Nothing},               # LIW, RPAR, IPAR, JAC, PSOL
+            Ptr{Nothing}, Ptr{Int32}, Ptr{Int32}),                              # RT, NRT, JROOT
+        callback, N, t, y, yp, tout, info, rtol, atol,
+        idid, rwork, lrw, iwork, liw, rpar, ipar, jac, psol,
+        rt, nrt, jroot)
 end
