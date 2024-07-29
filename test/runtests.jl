@@ -117,7 +117,7 @@ let
 
     prob3 = DAEProblem(testjac, [0.5, -2.0], ones(2), (0.0, 10.0))
     sol = solve(prob3, daskr())
-    @test maximum(sol[end]) < 2 #should be cyclic
+    @test maximum(sol.u[end]) < 2 #should be cyclic
 
     # inconsistent initial conditions
     function f!(res, du, u, p, t)
