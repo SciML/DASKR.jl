@@ -69,7 +69,7 @@ source file ddaskr.f/sdaskr.f.
 
      skrdem.f   = small demonstration program, single precision, which
                   solves two small problems with self-checking logic
-     sheat.f    = heat equation example program, single precision, using
+     sheath.f    = heat equation example program, single precision, using
                   the Krylov option with banded preconditioner
      sheatilu.f = heat equation example program, single precision, using
                   the Krylov option with sparse ILU preconditioner
@@ -79,7 +79,7 @@ source file ddaskr.f/sdaskr.f.
      swebilu.f  = food web system example program, single precision, using
                   the Krylov option with sparse ILU preconditioner
      makesdem   = Make-file to compile and load skrdem program
-     makesh     = Make-file to compile and load sheat program
+     makesh     = Make-file to compile and load sheath program
      makeshilu  = Make-file to compile and load sheatilu program
      makesw     = Make-file to compile and load sweb program
      makeswilu  = Make-file to compile and load swebilu program
