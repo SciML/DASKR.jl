@@ -1,4 +1,7 @@
 [default.extend-words]
+# DASKR-specific
+sheat = "sheat"
+
 # Julia-specific functions
 indexin = "indexin"
 findfirst = "findfirst"
