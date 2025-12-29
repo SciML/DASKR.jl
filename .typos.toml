@@ -1,6 +1,7 @@
 [default.extend-words]
 # DASKR-specific
 sheat = "sheat"
+INOUT = "INOUT"
 
 # Julia-specific functions
 indexin = "indexin"
