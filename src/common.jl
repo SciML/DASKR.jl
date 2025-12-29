@@ -258,7 +258,7 @@ function DiffEqBase.__solve(
 
     if alg.non_negativity_enforcement != 0
         info[10] = alg.non_negativity_enforcement
-        iwork[40 + (1:N[1])] .= alg.non_negativity_enforcement_array
+        iwork[40 .+ (1:N[1])] .= alg.non_negativity_enforcement_array
     end
 
     if alg.max_order != 5
