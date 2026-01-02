@@ -1,0 +1,5 @@
+[deps]
+DASKR = "165a45c3-f624-5814-8e85-3bdf39a7becd"
+DiffEqBase = "2b5f629d-d688-5b77-993f-72d75c75574e"
+JET = "c3a54625-cd67-489e-a8e7-0a5a0ff4e31b"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"

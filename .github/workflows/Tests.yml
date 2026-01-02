@@ -31,3 +31,20 @@ jobs:
       julia-version: "${{ matrix.version }}"
       os: "${{ matrix.os }}"
     secrets: "inherit"
+
+  nopre:
+    name: "NoPre"
+    strategy:
+      fail-fast: false
+      matrix:
+        version:
+          - "1"
+          - "lts"
+        os:
+          - "ubuntu-latest"
+    uses: "SciML/.github/.github/workflows/tests.yml@v1"
+    with:
+      julia-version: "${{ matrix.version }}"
+      os: "${{ matrix.os }}"
+      group: "NoPre"
+    secrets: "inherit"
