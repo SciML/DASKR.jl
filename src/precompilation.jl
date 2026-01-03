@@ -7,19 +7,20 @@ using PrecompileTools
         # Precompile the most common operations
 
         # 1. Precompile the C callback wrappers
+        # These now return (callback, userdata) tuples
         test_res = (t, y, yp, res) -> (res[1] = yp[1] - y[1]; nothing)
-        res_c(test_res)
+        res_callback, res_userdata = res_c(test_res)
 
         test_rt = (t, y, yp, rval) -> (rval[1] = y[1] - 0.5; nothing)
-        rt_c(test_rt)
+        rt_callback, rt_userdata = rt_c(test_rt)
 
         test_jac = (t, y, yp, pd, cj) -> (pd[1, 1] = cj - 1.0; nothing)
-        jac_c(test_jac)
+        jac_callback, jac_userdata = jac_c(test_jac)
 
         # 2. Precompile common_res_c and common_jac_c with typical parameter types
         test_f! = (out, du, u, p, t) -> (out[1] = du[1] - u[1]; nothing)
-        common_res_c(test_f!, nothing)
-        common_res_c(test_f!, (1.0,))
+        common_res_callback1, common_res_userdata1 = common_res_c(test_f!, nothing)
+        common_res_callback2, common_res_userdata2 = common_res_c(test_f!, (1.0,))
 
         # 3. Precompile daskr algorithm constructors
         daskr()
