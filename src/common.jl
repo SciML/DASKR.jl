@@ -234,7 +234,6 @@ function DiffEqBase.__solve(
     N = Int32[length(u0)]
     t = [prob.tspan[1]]
     nrt = Int32[0]
-    rpar = [0.0]
     rtol = [reltol]
     atol = [abstol]
     lrw = Int32[N[1] ^ 3 + 9 * N[1] + 60 + 3 * nrt[1]]
@@ -286,11 +285,15 @@ function DiffEqBase.__solve(
 
     jroot = zeros(Int32, max(nrt[1], 1))
     ipar = Int32[length(u0), nrt[1], length(u0)]
-    res = DASKR.common_res_c(f!, prob.p)
+    # common_res_c returns (callback, userdata) - userdata is passed as rpar
+    res, rpar = DASKR.common_res_c(f!, prob.p)
     rt = Int32[0]
 
     if DiffEqBase.has_jac(f!)
-        jac = common_jac_c(f!, prob.p)
+        # Get just the callback pointer - we reuse rpar from common_res_c
+        # Both res and jac callbacks share the same userdata (rpar) which
+        # contains the function and parameters
+        jac, _ = DASKR.common_jac_c(f!, prob.p)
         info[5] = 1 # Enables Jacobian
     else
         jac = Int32[0]

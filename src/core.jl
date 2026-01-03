@@ -1,99 +1,153 @@
 
+# User data wrapper structs - used to pass function and parameters through rpar
+# This avoids using closures with @cfunction which fails on ARM platforms
+
 """
-Return a C-style callback for the residual function `fun`. Suitable for use with `unsafe_solve`.
+Wrapper for user data with function only (no parameters).
+Used for the raw interface functions res_c, rt_c, jac_c.
 """
-function res_c(fun::F) where {F}
-    newfun = function (t, y, yp, cj, delta, ires, rpar, ipar)
-        n = convert(Array{Int}, unsafe_wrap(Array, ipar, (3,)))
-        t = unsafe_wrap(Array, t, (1,))
-        y = unsafe_wrap(Array, y, (n[1],))
-        yp = unsafe_wrap(Array, yp, (n[1],))
-        delta = unsafe_wrap(Array, delta, (n[1],))
-        fun(first(t), y, yp, delta)
-        return nothing
-    end
-    @cfunction($newfun, Nothing,
-        # T, Y, YPRIME, CJ, DELTA, IRES, RPAR, IPAR
-        (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64},
-            Ptr{Int32}, Ptr{Float64}, Ptr{Int32}))
+mutable struct DASKRFunUserData{F}
+    fun::F
 end
 
 """
-Return a C-style callback for the event-handling function `fun`. Suitable for use with `unsafe_solve`.
+Wrapper for user data with function and parameters (common interface).
+Used for common_res_c and common_jac_c. Both res and jac callbacks
+share the same userdata since they receive the same rpar from DASKR.
 """
-function rt_c(fun::F) where {F}
-    newfun = function (neq, t, y, yp, nrt, rval, rpar, ipar)
-        n = convert(Array{Int}, unsafe_wrap(Array, ipar, (3,)))
-        t = unsafe_wrap(Array, t, (1,))
-        y = unsafe_wrap(Array, y, (n[1],))
-        yp = unsafe_wrap(Array, yp, (n[1],))
-        rval = unsafe_wrap(Array, rval, (n[2],))
-        fun(first(t), y, yp, rval)
-        return nothing
-    end
-    @cfunction($newfun, Nothing,
-        # T, Y, YPRIME, CJ, DELTA, IRES, RPAR, IPAR
-        (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64},
-            Ptr{Int32}, Ptr{Float64}, Ptr{Int32}))
+mutable struct DASKRUserData{F, P}
+    fun::F
+    p::P
+end
+
+# Standalone callback functions - these are NOT closures
+# They receive user data through rpar and recover the Julia object
+
+function _res_callback(t, y, yp, cj, delta, ires, rpar, ipar)
+    userdata = unsafe_pointer_to_objref(rpar)::DASKRFunUserData
+    n = convert(Array{Int}, unsafe_wrap(Array, ipar, (3,)))
+    t_arr = unsafe_wrap(Array, t, (1,))
+    y_arr = unsafe_wrap(Array, y, (n[1],))
+    yp_arr = unsafe_wrap(Array, yp, (n[1],))
+    delta_arr = unsafe_wrap(Array, delta, (n[1],))
+    userdata.fun(first(t_arr), y_arr, yp_arr, delta_arr)
+    return nothing
+end
+
+function _rt_callback(neq, t, y, yp, nrt, rval, rpar, ipar)
+    userdata = unsafe_pointer_to_objref(rpar)::DASKRFunUserData
+    n = convert(Array{Int}, unsafe_wrap(Array, ipar, (3,)))
+    t_arr = unsafe_wrap(Array, t, (1,))
+    y_arr = unsafe_wrap(Array, y, (n[1],))
+    yp_arr = unsafe_wrap(Array, yp, (n[1],))
+    rval_arr = unsafe_wrap(Array, rval, (n[2],))
+    userdata.fun(first(t_arr), y_arr, yp_arr, rval_arr)
+    return nothing
+end
+
+function _jac_callback(t, y, yp, pd, cj, rpar, ipar)
+    userdata = unsafe_pointer_to_objref(rpar)::DASKRFunUserData
+    n = convert(Array{Int}, unsafe_wrap(Array, ipar, (3,)))
+    _t = unsafe_wrap(Array, t, (1,))
+    _y = unsafe_wrap(Array, y, (n[1],))
+    _yp = unsafe_wrap(Array, yp, (n[1],))
+    _pd = unsafe_wrap(Array, pd, (n[3], n[1]))
+    _cj = unsafe_wrap(Array, cj, (1,))
+    userdata.fun(first(_t), _y, _yp, _pd, first(_cj[1]))
+    return nothing
+end
+
+function _common_res_callback(t, y, yp, cj, delta, ires, rpar, ipar)
+    userdata = unsafe_pointer_to_objref(rpar)::DASKRUserData
+    n = convert(Array{Int}, unsafe_wrap(Array, ipar, (3,)))
+    t_arr = unsafe_wrap(Array, t, (1,))
+    y_arr = unsafe_wrap(Array, y, (n[1],))
+    yp_arr = unsafe_wrap(Array, yp, (n[1],))
+    delta_arr = unsafe_wrap(Array, delta, (n[1],))
+    userdata.fun(delta_arr, yp_arr, y_arr, userdata.p, first(t_arr))
+    return nothing
+end
+
+function _common_jac_callback(t, y, yp, pd, cj, rpar, ipar)
+    userdata = unsafe_pointer_to_objref(rpar)::DASKRUserData
+    n = convert(Array{Int}, unsafe_wrap(Array, ipar, (3,)))
+    _t = unsafe_wrap(Array, t, (1,))
+    _y = unsafe_wrap(Array, y, (n[1],))
+    _yp = unsafe_wrap(Array, yp, (n[1],))
+    _pd = unsafe_wrap(Array, pd, (n[3], n[1]))
+    _cj = unsafe_wrap(Array, cj, (1,))
+    userdata.fun.jac(_pd, _yp, _y, userdata.p, first(_cj[1]), first(_t))
+    return nothing
 end
 
 """
-Return a C-style callback for the Jacobian function `fun`. Suitable for use with `unsafe_solve`.
+Return a C-style callback for the residual function `fun` and user data.
+Returns (callback_ptr, userdata). The userdata must be passed as rpar to unsafe_solve.
 """
-function jac_c(fun::F) where {F}
-    newfun = function (t, y, yp, pd, cj, rpar, ipar)
-        n = convert(Array{Int}, unsafe_wrap(Array, ipar, (3,)))
-        _t = unsafe_wrap(Array, t, (1,))
-        _y = unsafe_wrap(Array, y, (n[1],))
-        _yp = unsafe_wrap(Array, yp, (n[1],))
-        _pd = unsafe_wrap(Array, pd, (n[3], n[1]))
-        _cj = unsafe_wrap(Array, cj, (1,))
-        fun(first(_t), _y, _yp, _pd, first(_cj[1]))
-        return nothing
-    end
-    @cfunction($newfun, Nothing,
+function res_c(fun)
+    userdata = DASKRFunUserData(fun)
+    callback = @cfunction(_res_callback, Nothing,
+        # T, Y, YPRIME, CJ, DELTA, IRES, RPAR, IPAR
+        (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64},
+            Ptr{Int32}, Ptr{Nothing}, Ptr{Int32}))
+    return callback, userdata
+end
+
+"""
+Return a C-style callback for the event-handling function `fun` and user data.
+Returns (callback_ptr, userdata). The userdata must be passed as rpar to unsafe_solve.
+"""
+function rt_c(fun)
+    userdata = DASKRFunUserData(fun)
+    callback = @cfunction(_rt_callback, Nothing,
+        # NEQ, T, Y, YPRIME, NRT, RVAL, RPAR, IPAR
+        (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64},
+            Ptr{Int32}, Ptr{Nothing}, Ptr{Int32}))
+    return callback, userdata
+end
+
+"""
+Return a C-style callback for the Jacobian function `fun` and user data.
+Returns (callback_ptr, userdata). The userdata must be passed as rpar to unsafe_solve.
+"""
+function jac_c(fun)
+    userdata = DASKRFunUserData(fun)
+    callback = @cfunction(_jac_callback, Nothing,
         # T, Y, YPRIME, PD, CJ, RPAR, IPAR
         (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64},
-            Ptr{Float64}, Ptr{Int32}))
+            Ptr{Nothing}, Ptr{Int32}))
+    return callback, userdata
 end
 
 """
-Return a C-style callback for the residual function `fun`. Suitable for use with `unsafe_solve`.
+Return a C-style callback for the residual function `fun` with parameters (common interface).
+Returns (callback_ptr, userdata). The userdata must be passed as rpar to unsafe_solve.
 """
-function common_res_c(fun::F, p::P) where {F, P}
-    newfun = function (t, y, yp, cj, delta, ires, rpar, ipar)
-        n = convert(Array{Int}, unsafe_wrap(Array, ipar, (3,)))
-        t = unsafe_wrap(Array, t, (1,))
-        y = unsafe_wrap(Array, y, (n[1],))
-        yp = unsafe_wrap(Array, yp, (n[1],))
-        delta = unsafe_wrap(Array, delta, (n[1],))
-        fun(delta, yp, y, p, first(t))
-        return nothing
-    end
-    @cfunction($newfun, Nothing,
+function common_res_c(fun, p)
+    userdata = DASKRUserData(fun, p)
+    callback = @cfunction(_common_res_callback, Nothing,
         # T, Y, YPRIME, CJ, DELTA, IRES, RPAR, IPAR
         (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64},
-            Ptr{Int32}, Ptr{Float64}, Ptr{Int32}))
+            Ptr{Int32}, Ptr{Nothing}, Ptr{Int32}))
+    return callback, userdata
 end
 
 """
-Return a C-style callback for the Jacobian function `fun`. Suitable for use with `unsafe_solve`. For a common interface passed function.
+Return a C-style callback for the Jacobian function `fun` with parameters (common interface).
+Returns (callback_ptr, userdata). The userdata must be passed as rpar to unsafe_solve.
+The userdata should be the same object as returned by common_res_c since both
+callbacks share the same rpar from DASKR.
 """
-function common_jac_c(fun::F, p::P) where {F, P}
-    newfun = function (t, y, yp, pd, cj, rpar, ipar)
-        n = convert(Array{Int}, unsafe_wrap(Array, ipar, (3,)))
-        _t = unsafe_wrap(Array, t, (1,))
-        _y = unsafe_wrap(Array, y, (n[1],))
-        _yp = unsafe_wrap(Array, yp, (n[1],))
-        _pd = unsafe_wrap(Array, pd, (n[3], n[1]))
-        _cj = unsafe_wrap(Array, cj, (1,))
-        fun.jac(_pd, _yp, _y, p, first(_cj[1]), first(_t))
-        return nothing
-    end
-    @cfunction($newfun, Nothing,
+function common_jac_c(fun, p)
+    # Note: The caller should use the same userdata as common_res_c
+    # This function returns the callback pointer; the userdata is typically
+    # shared with the residual function
+    userdata = DASKRUserData(fun, p)
+    callback = @cfunction(_common_jac_callback, Nothing,
         # T, Y, YPRIME, PD, CJ, RPAR, IPAR
         (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64},
-            Ptr{Float64}, Ptr{Int32}))
+            Ptr{Nothing}, Ptr{Int32}))
+    return callback, userdata
 end
 
 """
