@@ -1,5 +1,3 @@
-__precompile__()
-
 module DASKR
 
 using Compat
@@ -17,4 +15,8 @@ function __init__()
     global lib = Libdl.dlopen(libdaskr)
     global warnlist = Set(warnkeywords)
 end
+
+# Precompilation workload
+include("precompilation.jl")
+
 end # module
