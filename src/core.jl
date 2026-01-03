@@ -2,7 +2,7 @@
 """
 Return a C-style callback for the residual function `fun`. Suitable for use with `unsafe_solve`.
 """
-function res_c(fun)
+function res_c(fun::F) where {F}
     newfun = function (t, y, yp, cj, delta, ires, rpar, ipar)
         n = convert(Array{Int}, unsafe_wrap(Array, ipar, (3,)))
         t = unsafe_wrap(Array, t, (1,))
@@ -21,7 +21,7 @@ end
 """
 Return a C-style callback for the event-handling function `fun`. Suitable for use with `unsafe_solve`.
 """
-function rt_c(fun)
+function rt_c(fun::F) where {F}
     newfun = function (neq, t, y, yp, nrt, rval, rpar, ipar)
         n = convert(Array{Int}, unsafe_wrap(Array, ipar, (3,)))
         t = unsafe_wrap(Array, t, (1,))
@@ -40,7 +40,7 @@ end
 """
 Return a C-style callback for the Jacobian function `fun`. Suitable for use with `unsafe_solve`.
 """
-function jac_c(fun)
+function jac_c(fun::F) where {F}
     newfun = function (t, y, yp, pd, cj, rpar, ipar)
         n = convert(Array{Int}, unsafe_wrap(Array, ipar, (3,)))
         _t = unsafe_wrap(Array, t, (1,))
@@ -60,7 +60,7 @@ end
 """
 Return a C-style callback for the residual function `fun`. Suitable for use with `unsafe_solve`.
 """
-function common_res_c(fun, p)
+function common_res_c(fun::F, p::P) where {F, P}
     newfun = function (t, y, yp, cj, delta, ires, rpar, ipar)
         n = convert(Array{Int}, unsafe_wrap(Array, ipar, (3,)))
         t = unsafe_wrap(Array, t, (1,))
@@ -79,7 +79,7 @@ end
 """
 Return a C-style callback for the Jacobian function `fun`. Suitable for use with `unsafe_solve`. For a common interface passed function.
 """
-function common_jac_c(fun, p)
+function common_jac_c(fun::F, p::P) where {F, P}
     newfun = function (t, y, yp, pd, cj, rpar, ipar)
         n = convert(Array{Int}, unsafe_wrap(Array, ipar, (3,)))
         _t = unsafe_wrap(Array, t, (1,))
