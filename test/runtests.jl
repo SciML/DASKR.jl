@@ -34,7 +34,6 @@ let
     N = Int32[length(y)]
     t = [tstart]
     nrt = Int32[0]
-    rpar = [0.0]
     rtol = [reltol]
     atol = [abstol]
     lrw = Int32[N[1] ^ 3 + 9 * N[1] + 60 + 3 * nrt[1]]
@@ -44,7 +43,8 @@ let
     iwork[40 .+ (1:N[1])] = id
     jroot = zeros(Int32, max(nrt[1], 1))
     ipar = Int32[length(y), nrt[1], length(y)]
-    res = DASKR.res_c(vanderpol)
+    # res_c now returns (callback, userdata) - userdata is passed as rpar
+    res, rpar = DASKR.res_c(vanderpol)
     rt = Int32[0]
     jac = Int32[0]
     psol = Int32[0]
