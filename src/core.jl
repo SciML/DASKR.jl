@@ -1,4 +1,3 @@
-
 # User data wrapper structs - used to pass function and parameters through rpar
 # This avoids using closures with @cfunction which fails on ARM platforms
 
@@ -86,10 +85,14 @@ Returns (callback_ptr, userdata). The userdata must be passed as rpar to unsafe_
 """
 function res_c(fun)
     userdata = DASKRFunUserData(fun)
-    callback = @cfunction(_res_callback, Nothing,
+    callback = @cfunction(
+        _res_callback, Nothing,
         # T, Y, YPRIME, CJ, DELTA, IRES, RPAR, IPAR
-        (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64},
-            Ptr{Int32}, Ptr{Nothing}, Ptr{Int32}))
+        (
+            Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64},
+            Ptr{Int32}, Ptr{Nothing}, Ptr{Int32},
+        )
+    )
     return callback, userdata
 end
 
@@ -99,10 +102,14 @@ Returns (callback_ptr, userdata). The userdata must be passed as rpar to unsafe_
 """
 function rt_c(fun)
     userdata = DASKRFunUserData(fun)
-    callback = @cfunction(_rt_callback, Nothing,
+    callback = @cfunction(
+        _rt_callback, Nothing,
         # NEQ, T, Y, YPRIME, NRT, RVAL, RPAR, IPAR
-        (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64},
-            Ptr{Int32}, Ptr{Nothing}, Ptr{Int32}))
+        (
+            Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64},
+            Ptr{Int32}, Ptr{Nothing}, Ptr{Int32},
+        )
+    )
     return callback, userdata
 end
 
@@ -112,10 +119,14 @@ Returns (callback_ptr, userdata). The userdata must be passed as rpar to unsafe_
 """
 function jac_c(fun)
     userdata = DASKRFunUserData(fun)
-    callback = @cfunction(_jac_callback, Nothing,
+    callback = @cfunction(
+        _jac_callback, Nothing,
         # T, Y, YPRIME, PD, CJ, RPAR, IPAR
-        (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64},
-            Ptr{Nothing}, Ptr{Int32}))
+        (
+            Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64},
+            Ptr{Nothing}, Ptr{Int32},
+        )
+    )
     return callback, userdata
 end
 
@@ -125,10 +136,14 @@ Returns (callback_ptr, userdata). The userdata must be passed as rpar to unsafe_
 """
 function common_res_c(fun, p)
     userdata = DASKRUserData(fun, p)
-    callback = @cfunction(_common_res_callback, Nothing,
+    callback = @cfunction(
+        _common_res_callback, Nothing,
         # T, Y, YPRIME, CJ, DELTA, IRES, RPAR, IPAR
-        (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64},
-            Ptr{Int32}, Ptr{Nothing}, Ptr{Int32}))
+        (
+            Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64},
+            Ptr{Int32}, Ptr{Nothing}, Ptr{Int32},
+        )
+    )
     return callback, userdata
 end
 
@@ -143,10 +158,14 @@ function common_jac_c(fun, p)
     # This function returns the callback pointer; the userdata is typically
     # shared with the residual function
     userdata = DASKRUserData(fun, p)
-    callback = @cfunction(_common_jac_callback, Nothing,
+    callback = @cfunction(
+        _common_jac_callback, Nothing,
         # T, Y, YPRIME, PD, CJ, RPAR, IPAR
-        (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64},
-            Ptr{Nothing}, Ptr{Int32}))
+        (
+            Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ptr{Float64},
+            Ptr{Nothing}, Ptr{Int32},
+        )
+    )
     return callback, userdata
 end
 
@@ -1466,18 +1485,24 @@ C      Initial Condition Calculation for Differential-Algebraic
 C      Systems, SIAM J. Sci. Comp. 19 (1998), pp. 1495-1512.
 ```
 """
-function unsafe_solve(callback, N, t, y, yp,
+function unsafe_solve(
+        callback, N, t, y, yp,
         tout, info, rtol, atol,
         idid, rwork, lrw, iwork,
         liw, rpar, ipar, jac, psol,
-        rt, nrt, jroot)
-    ccall(Libdl.dlsym(lib, :ddaskr_), Nothing,
-        (Ptr{Nothing}, Ref{Int32}, Ref{Float64}, Ptr{Float64}, Ptr{Float64}, # RES, NEQ, T, Y, YPRIME
+        rt, nrt, jroot
+    )
+    return ccall(
+        Libdl.dlsym(lib, :ddaskr_), Nothing,
+        (
+            Ptr{Nothing}, Ref{Int32}, Ref{Float64}, Ptr{Float64}, Ptr{Float64}, # RES, NEQ, T, Y, YPRIME
             Ptr{Float64}, Ptr{Int32}, Ptr{Float64}, Ptr{Float64},            # TOUT, INFO, RTOL, ATOL
             Ref{Int32}, Ptr{Float64}, Ref{Int32}, Ptr{Int32},                # IDID, RWORK, LRW, IWORK
             Ref{Int32}, Any, Ptr{Int32}, Ptr{Nothing}, Ptr{Nothing},               # LIW, RPAR, IPAR, JAC, PSOL
-            Ptr{Nothing}, Ptr{Int32}, Ptr{Int32}),                              # RT, NRT, JROOT
+            Ptr{Nothing}, Ptr{Int32}, Ptr{Int32},
+        ),                              # RT, NRT, JROOT
         callback, N, t, y, yp, tout, info, rtol, atol,
         idid, rwork, lrw, iwork, liw, rpar, ipar, jac, psol,
-        rt, nrt, jroot)
+        rt, nrt, jroot
+    )
 end

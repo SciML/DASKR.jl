@@ -38,8 +38,10 @@ using PrecompileTools
         tspan = (0.0, 1.0)
 
         # Create DAE problem to precompile problem construction
-        prob = DiffEqBase.DAEProblem(precompile_residual, du0, u0, tspan,
-            differential_vars = [true, false])
+        prob = DiffEqBase.DAEProblem(
+            precompile_residual, du0, u0, tspan,
+            differential_vars = [true, false]
+        )
 
         # Note: We cannot call solve() during precompilation because
         # unsafe_solve requires `lib` which is set in __init__().
