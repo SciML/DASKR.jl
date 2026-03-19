@@ -222,3 +222,11 @@ if GROUP == "NoPre" && isempty(VERSION.prerelease)
     Pkg.instantiate()
     @time include("nopre/jet.jl")
 end
+
+# MTK group: ModelingToolkit integration tests
+if GROUP == "MTK"
+    Pkg.activate(joinpath(@__DIR__, "mtk"))
+    Pkg.develop(PackageSpec(path = dirname(@__DIR__)))
+    Pkg.instantiate()
+    @time include("mtk/initialization.jl")
+end

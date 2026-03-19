@@ -1,0 +1,7 @@
+[deps]
+DASKR = "165a45c3-f624-5814-8e85-3bdf39a7becd"
+DiffEqBase = "2b5f629d-d688-5b77-993f-72d75c75574e"
+ModelingToolkit = "961ee093-0014-501f-94e3-6117800e7a78"
+SciMLBase = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
+SymbolicIndexingInterface = "2efcf032-c050-4f8e-a9bb-153293bab1f5"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
