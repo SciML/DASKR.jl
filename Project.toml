@@ -14,7 +14,7 @@ SciMLBase = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
 [compat]
 Compat = "4.1"
 DASKR_jll = "1"
-DiffEqBase = "6"
+DiffEqBase = "6.190.2"
 PrecompileTools = "1.2"
 Reexport = "1.0"
 SciMLBase = "2.119"
