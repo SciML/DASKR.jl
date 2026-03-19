@@ -205,11 +205,11 @@ end
     sol = solve(prob_with_diffvars, daskr(); initializealg=DiffEqBase.ShampineCollocationInit())
     @test sol.retcode == ReturnCode.Success
     
-    # Test OverrideInit (falls back to NoInit when no initialization_data)
+    # Test OverrideInit (falls back to CheckInit when no initialization_data)
     sol = solve(prob, daskr(); initializealg=SciMLBase.OverrideInit())
     @test sol.retcode == ReturnCode.Success
     
-    # Test DefaultInit (should use NoInit by default)
+    # Test DefaultInit (should use CheckInit by default, matching Sundials v5 pattern)
     sol = solve(prob, daskr(); initializealg=DiffEqBase.DefaultInit())
     @test sol.retcode == ReturnCode.Success
 end

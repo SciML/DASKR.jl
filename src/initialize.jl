@@ -18,10 +18,10 @@ For DASKR, INFO(11) controls initialization:
 """
 function perform_initialization! end
 
-# DefaultInit - routes to OverrideInit if initialization_data exists, otherwise NoInit
-# Note: We use NoInit (not CheckInit) by default because DASKR can handle some
-# inconsistent initial conditions internally via its INFO(11) mechanism.
-# This matches the original DASKR.jl behavior before explicit initialization support.
+# DefaultInit - routes to OverrideInit if initialization_data exists, otherwise CheckInit
+# This matches the Sundials v5 pattern: OverrideInit → CheckInit
+# OverrideInit uses MTK's initialization system to compute consistent initial conditions,
+# then CheckInit verifies the DAE constraints are satisfied.
 function perform_initialization!(
     prob, alg, u0, du0, p, t0, f!, abstol, reltol,
     initializealg::DefaultInit,
@@ -34,11 +34,11 @@ function perform_initialization!(
             info, iwork, differential_vars
         )
     else
-        # Use NoInit by default to preserve DASKR's original behavior
-        # Users can explicitly use CheckInit if they want strict validation
+        # Use CheckInit by default to verify initial conditions satisfy the DAE constraints
+        # This matches the Sundials v5 pattern
         return perform_initialization!(
             prob, alg, u0, du0, p, t0, f!, abstol, reltol,
-            NoInit(),
+            CheckInit(),
             info, iwork, differential_vars
         )
     end
