@@ -142,12 +142,6 @@ function perform_initialization!(
     initializealg::OverrideInit,
     info, iwork, differential_vars
 )
-    # Use SciMLBase's get_initial_values to compute consistent initial conditions
-    # This is the pattern used by ModelingToolkit
-    
-    # We need to create a simple integrator-like object that SciMLBase can work with
-    # Since DASKR doesn't have a proper integrator, we'll use get_initial_values directly
-    
     # Check if get_initial_values is available and the problem has initialization_data
     if prob.f.initialization_data === nothing
         # No initialization data, fall back to CheckInit
@@ -158,8 +152,20 @@ function perform_initialization!(
         )
     end
     
+    # First check if initial conditions are already consistent
+    # If they are, skip the expensive MTK initialization
+    residual = similar(u0)
+    f!(residual, du0, u0, p, t0)
+    max_residual = maximum(abs.(residual))
+    
+    if max_residual < abstol
+        # ICs are already consistent, no initialization needed
+        return u0, du0, p, true, Int32(0)
+    end
+    
+    # ICs are inconsistent - try using SciMLBase's get_initial_values
+    # This is the pattern used by ModelingToolkit
     # Create a minimal integrator-like object for get_initial_values
-    # get_initial_values expects: prob, integrator, f, initializealg, Val(isinplace); nlsolve_alg, abstol, reltol
     integrator = DASKRInitIntegrator(prob, u0, du0, p, t0, abstol, reltol)
     
     try
@@ -169,6 +175,11 @@ function perform_initialization!(
         )
         
         if !success
+            # Fall back to DASKR's BrownFullBasicInit if available
+            if differential_vars !== nothing
+                @warn "OverrideInit could not compute consistent initial conditions. Falling back to BrownFullBasicInit."
+                return u0, du0, p, true, Int32(1)  # Let DASKR handle it
+            end
             return u0, du0, p, false, Int32(0)
         end
         
@@ -181,7 +192,11 @@ function perform_initialization!(
         
         return u0, du0, p_new, true, Int32(0)
     catch e
-        # If get_initial_values fails, report the failure
+        # If get_initial_values fails, fall back to DASKR's initialization if possible
+        if differential_vars !== nothing
+            @warn "OverrideInit failed ($e). Falling back to BrownFullBasicInit."
+            return u0, du0, p, true, Int32(1)  # Let DASKR handle it
+        end
         @warn "OverrideInit failed: $e"
         return u0, du0, p, false, Int32(0)
     end
