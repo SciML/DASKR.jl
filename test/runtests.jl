@@ -179,40 +179,42 @@ end
         r[1] -= yp[1]
         return r[3] = y[1] + y[2] + y[3] - 1.0
     end
-    
+
     u0 = [1.0, 0, 0]
     du0 = [-0.04, 0.04, 0.0]  # Consistent initial conditions
-    
+
     # Test NoInit
     prob = DAEProblem(init_resrob, du0, u0, (0.0, 100.0))
-    sol = solve(prob, daskr(); initializealg=DiffEqBase.NoInit())
+    sol = solve(prob, daskr(); initializealg = DiffEqBase.NoInit())
     @test sol.retcode == ReturnCode.Success
-    
+
     # Test CheckInit with consistent ICs
-    sol = solve(prob, daskr(); initializealg=SciMLBase.CheckInit())
+    sol = solve(prob, daskr(); initializealg = SciMLBase.CheckInit())
     @test sol.retcode == ReturnCode.Success
-    
+
     # Test CheckInit with inconsistent ICs (should error)
     bad_du0 = [0.0, 0.0, 0.0]
     prob_bad = DAEProblem(init_resrob, bad_du0, u0, (0.0, 100.0))
-    @test_throws ErrorException solve(prob_bad, daskr(); initializealg=SciMLBase.CheckInit())
-    
+    @test_throws ErrorException solve(prob_bad, daskr(); initializealg = SciMLBase.CheckInit())
+
     # Test BrownFullBasicInit (requires differential_vars)
-    prob_with_diffvars = DAEProblem(init_resrob, bad_du0, u0, (0.0, 100.0), 
-                                     differential_vars=[true, true, false])
-    sol = solve(prob_with_diffvars, daskr(); initializealg=DiffEqBase.BrownFullBasicInit())
+    prob_with_diffvars = DAEProblem(
+        init_resrob, bad_du0, u0, (0.0, 100.0),
+        differential_vars = [true, true, false]
+    )
+    sol = solve(prob_with_diffvars, daskr(); initializealg = DiffEqBase.BrownFullBasicInit())
     @test sol.retcode == ReturnCode.Success
-    
+
     # Test ShampineCollocationInit
-    sol = solve(prob_with_diffvars, daskr(); initializealg=DiffEqBase.ShampineCollocationInit())
+    sol = solve(prob_with_diffvars, daskr(); initializealg = DiffEqBase.ShampineCollocationInit())
     @test sol.retcode == ReturnCode.Success
-    
+
     # Test OverrideInit (falls back to CheckInit when no initialization_data)
-    sol = solve(prob, daskr(); initializealg=SciMLBase.OverrideInit())
+    sol = solve(prob, daskr(); initializealg = SciMLBase.OverrideInit())
     @test sol.retcode == ReturnCode.Success
-    
+
     # Test DefaultInit (should use CheckInit by default, matching Sundials v5 pattern)
-    sol = solve(prob, daskr(); initializealg=DiffEqBase.DefaultInit())
+    sol = solve(prob, daskr(); initializealg = DiffEqBase.DefaultInit())
     @test sol.retcode == ReturnCode.Success
 end
 

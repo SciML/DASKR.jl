@@ -23,10 +23,10 @@ function perform_initialization! end
 # OverrideInit uses MTK's initialization system to compute consistent initial conditions,
 # then CheckInit verifies the DAE constraints are satisfied.
 function perform_initialization!(
-    prob, alg, u0, du0, p, t0, f!, abstol, reltol,
-    initializealg::DefaultInit,
-    info, iwork, differential_vars
-)
+        prob, alg, u0, du0, p, t0, f!, abstol, reltol,
+        initializealg::DefaultInit,
+        info, iwork, differential_vars
+    )
     if prob.f.initialization_data !== nothing
         return perform_initialization!(
             prob, alg, u0, du0, p, t0, f!, abstol, reltol,
@@ -46,23 +46,23 @@ end
 
 # NoInit - do nothing, assume user provided consistent initial conditions
 function perform_initialization!(
-    prob, alg, u0, du0, p, t0, f!, abstol, reltol,
-    initializealg::NoInit,
-    info, iwork, differential_vars
-)
+        prob, alg, u0, du0, p, t0, f!, abstol, reltol,
+        initializealg::NoInit,
+        info, iwork, differential_vars
+    )
     return u0, du0, p, true, Int32(0)  # INFO(11) = 0
 end
 
 # CheckInit - verify that initial conditions satisfy the DAE constraints
 function perform_initialization!(
-    prob, alg, u0, du0, p, t0, f!, abstol, reltol,
-    initializealg::CheckInit,
-    info, iwork, differential_vars
-)
+        prob, alg, u0, du0, p, t0, f!, abstol, reltol,
+        initializealg::CheckInit,
+        info, iwork, differential_vars
+    )
     # Evaluate the DAE residual at the initial conditions
     residual = similar(u0)
     f!(residual, du0, u0, p, t0)
-    
+
     # Check if residuals are within tolerance
     max_residual = maximum(abs.(residual))
     if max_residual >= abstol
@@ -88,21 +88,21 @@ function perform_initialization!(
             """
         )
     end
-    
+
     return u0, du0, p, true, Int32(0)  # INFO(11) = 0
 end
 
 # BrownFullBasicInit - use DASKR's built-in initialization (INFO(11) = 1)
 # Given Y_d (differential variables), calculate Y_a (algebraic variables) and Y'_d
 function perform_initialization!(
-    prob, alg, u0, du0, p, t0, f!, abstol, reltol,
-    initializealg::BrownFullBasicInit,
-    info, iwork, differential_vars
-)
+        prob, alg, u0, du0, p, t0, f!, abstol, reltol,
+        initializealg::BrownFullBasicInit,
+        info, iwork, differential_vars
+    )
     # First check if we actually need initialization
     residual = similar(u0)
     f!(residual, du0, u0, p, t0)
-    
+
     tol = initializealg.abstol
     if any(abs.(residual) .>= tol)
         if differential_vars === nothing
@@ -112,36 +112,36 @@ function perform_initialization!(
         # This tells DASKR to compute consistent Y_a and Y'_d given Y_d
         return u0, du0, p, true, Int32(1)
     end
-    
+
     return u0, du0, p, true, Int32(0)
 end
 
 # ShampineCollocationInit - use DASKR's built-in initialization (INFO(11) = 2)
 # Given Y', calculate Y
 function perform_initialization!(
-    prob, alg, u0, du0, p, t0, f!, abstol, reltol,
-    initializealg::ShampineCollocationInit,
-    info, iwork, differential_vars
-)
+        prob, alg, u0, du0, p, t0, f!, abstol, reltol,
+        initializealg::ShampineCollocationInit,
+        info, iwork, differential_vars
+    )
     # First check if we actually need initialization
     residual = similar(u0)
     f!(residual, du0, u0, p, t0)
-    
+
     if any(abs.(residual) .>= reltol)
         # Set INFO(11) = 2 for DASKR's built-in initialization
         # This tells DASKR to compute consistent Y given Y'
         return u0, du0, p, true, Int32(2)
     end
-    
+
     return u0, du0, p, true, Int32(0)
 end
 
 # OverrideInit - use SciMLBase's get_initial_values (for MTK compatibility)
 function perform_initialization!(
-    prob, alg, u0, du0, p, t0, f!, abstol, reltol,
-    initializealg::OverrideInit,
-    info, iwork, differential_vars
-)
+        prob, alg, u0, du0, p, t0, f!, abstol, reltol,
+        initializealg::OverrideInit,
+        info, iwork, differential_vars
+    )
     # Check if get_initial_values is available and the problem has initialization_data
     if prob.f.initialization_data === nothing
         # No initialization data, fall back to CheckInit
@@ -151,29 +151,29 @@ function perform_initialization!(
             info, iwork, differential_vars
         )
     end
-    
+
     # First check if initial conditions are already consistent
     # If they are, skip the expensive MTK initialization
     residual = similar(u0)
     f!(residual, du0, u0, p, t0)
     max_residual = maximum(abs.(residual))
-    
+
     if max_residual < abstol
         # ICs are already consistent, no initialization needed
         return u0, du0, p, true, Int32(0)
     end
-    
+
     # ICs are inconsistent - try using SciMLBase's get_initial_values
     # This is the pattern used by ModelingToolkit
     # Create a minimal integrator-like object for get_initial_values
     integrator = DASKRInitIntegrator(prob, u0, du0, p, t0, abstol, reltol)
-    
+
     try
         u0_new, p_new, success = get_initial_values(
             prob, integrator, prob.f, initializealg, Val(isinplace(prob));
-            abstol=abstol, reltol=reltol
+            abstol = abstol, reltol = reltol
         )
-        
+
         if !success
             # Fall back to DASKR's BrownFullBasicInit if available
             if differential_vars !== nothing
@@ -182,14 +182,14 @@ function perform_initialization!(
             end
             return u0, du0, p, false, Int32(0)
         end
-        
+
         # Update u0 in place
         if isinplace(prob)
             u0 .= vec(u0_new)
         else
             u0 = vec(u0_new)
         end
-        
+
         return u0, du0, p_new, true, Int32(0)
     catch e
         # If get_initial_values fails, fall back to DASKR's initialization if possible
@@ -221,7 +221,7 @@ end
 
 function DASKRInitIntegrator(prob, u0, du0, p, t0, abstol, reltol)
     # Create a minimal solution-like object
-    sol = (prob=prob, u=[copy(u0)], t=[t0])
+    sol = (prob = prob, u = [copy(u0)], t = [t0])
     return DASKRInitIntegrator(sol, copy(u0), copy(du0), p, t0, abstol, reltol, prob)
 end
 

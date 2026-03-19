@@ -282,7 +282,7 @@ function DiffEqBase.__solve(
         prob, alg, u0, du0, prob.p, t0, f!, abstol, reltol,
         initializealg, info, iwork, prob.differential_vars
     )
-    
+
     if !init_success
         return DiffEqBase.build_solution(
             prob, alg, [t0], [reshape(u0, sizeu)],
@@ -292,7 +292,7 @@ function DiffEqBase.__solve(
             retcode = ReturnCode.InitialFailure
         )
     end
-    
+
     # Set INFO(11) based on initialization algorithm
     info[11] = init_type
 
