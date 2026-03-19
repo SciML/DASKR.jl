@@ -135,16 +135,18 @@ let
     sol = solve(prob3, daskr())
     @test maximum(sol.u[end]) < 2 #should be cyclic
 
-    # inconsistent initial conditions
+    # inconsistent initial conditions - use BrownFullBasicInit to compute consistent ICs
+    # Note: With DefaultInit → CheckInit (Sundials v5 pattern), inconsistent ICs will error
     function f!(res, du, u, p, t)
         res[1] = du[1] - 1.01
         return
     end
     u0 = [0.0]
     tspan = (0.0, 10.0)
-    du0 = [0.0]
+    du0 = [0.0]  # Inconsistent: should be [1.01] for du[1] - 1.01 = 0
     dae_prob = DAEProblem(f!, du0, u0, tspan, differential_vars = [true])
-    sol = solve(dae_prob, daskr())
+    # Use BrownFullBasicInit to let DASKR compute consistent initial conditions
+    sol = solve(dae_prob, daskr(); initializealg = DiffEqBase.BrownFullBasicInit())
 
     # Jacobian
     function f2!(res, du, u, p, t)

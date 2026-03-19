@@ -38,17 +38,20 @@ using ModelingToolkit: t_nounits as t, D_nounits as D
             (0.0, 0.4)
         )
 
-        @testset "OverrideInit (MTK initialization)" begin
-            # Test with init() to check initialization works
-            integ = init(prob, daskr())
-            @test integ.initializealg isa DASKR.DefaultInit
-            @test integ[x] ≈ 1.0
-            @test integ[y] ≈ cbrt(4)
-            @test integ.ps[p] ≈ 1.0
-            @test integ.ps[q] ≈ sqrt(2)
-
-            # Test full solve
+        @testset "OverrideInit (MTK initialization) via DefaultInit" begin
+            # Test full solve - DefaultInit should route to OverrideInit for MTK problems
+            # DASKR uses solve() directly (no integrator interface like Sundials)
             sol = solve(prob, daskr())
+            @test SciMLBase.successful_retcode(sol)
+            @test sol[x, 1] ≈ 1.0
+            @test sol[y, 1] ≈ cbrt(4)
+            @test sol.ps[p] ≈ 1.0
+            @test sol.ps[q] ≈ sqrt(2)
+        end
+
+        @testset "Explicit OverrideInit" begin
+            # Test with explicit OverrideInit
+            sol = solve(prob, daskr(); initializealg = SciMLBase.OverrideInit())
             @test SciMLBase.successful_retcode(sol)
             @test sol[x, 1] ≈ 1.0
             @test sol[y, 1] ≈ cbrt(4)
@@ -58,9 +61,9 @@ using ModelingToolkit: t_nounits as t, D_nounits as D
 
         @testset "CheckInit" begin
             # CheckInit should fail with incomplete initial values
-            @test_throws Any init(prob, daskr(); initializealg = SciMLBase.CheckInit())
+            @test_throws Any solve(prob, daskr(); initializealg = SciMLBase.CheckInit())
 
-            # Create a problem with correct initial values - all values specified
+            # Create a problem with all correct initial values specified
             # D(x) = p*y = 1*cbrt(4) = cbrt(4)
             # D(y) = -x²/y²*D(x) = -1/cbrt(4)²*cbrt(4) = -1/cbrt(4)
             prob_correct = DAEProblem(
@@ -76,27 +79,36 @@ using ModelingToolkit: t_nounits as t, D_nounits as D
                 (0.0, 0.4)
             )
 
-            # Need to convert to IIP/OOP after creation to get proper numeric arrays
-            if iip
-                prob_correct_typed = DAEProblem{true}(
-                    prob_correct.f,
-                    prob_correct.du0,
-                    prob_correct.u0,
-                    prob_correct.tspan,
-                    prob_correct.p
-                )
-            else
-                prob_correct_typed = DAEProblem{false}(
-                    prob_correct.f,
-                    prob_correct.du0,
-                    prob_correct.u0,
-                    prob_correct.tspan,
-                    prob_correct.p
-                )
-            end
-
             # This should work since all values are correct
-            @test_nowarn init(prob_correct_typed, daskr(); initializealg = SciMLBase.CheckInit())
+            sol_correct = solve(prob_correct, daskr(); initializealg = SciMLBase.CheckInit())
+            @test SciMLBase.successful_retcode(sol_correct)
         end
+    end
+end
+
+@testset "Simple Robertson DAE with MTK" begin
+    # Test the Robertson DAE from the Sundials examples
+    @variables y1(t) [guess = 1.0] y2(t) [guess = 0.0] y3(t) [guess = 0.0]
+    
+    @mtkcompile rob_sys = System(
+        [D(y1) ~ -0.04 * y1 + 1.0e4 * y2 * y3,
+         D(y2) ~ 0.04 * y1 - 1.0e4 * y2 * y3 - 3.0e7 * y2^2,
+         y1 + y2 + y3 ~ 1.0],  # algebraic constraint
+        t
+    )
+    
+    # Create problem with consistent initial conditions
+    prob = DAEProblem(
+        rob_sys,
+        [D(y1) => -0.04, D(y2) => 0.04],  # derivatives
+        (0.0, 100.0)
+    )
+    
+    sol = solve(prob, daskr())
+    @test SciMLBase.successful_retcode(sol)
+    
+    # Check mass conservation (y1 + y2 + y3 = 1)
+    for i in 1:length(sol.t)
+        @test sol[y1, i] + sol[y2, i] + sol[y3, i] ≈ 1.0 atol=1e-5
     end
 end
