@@ -18,30 +18,18 @@ For DASKR, INFO(11) controls initialization:
 """
 function perform_initialization! end
 
-# DefaultInit - routes to OverrideInit if initialization_data exists, otherwise CheckInit
-# This matches the Sundials v5 pattern: OverrideInit → CheckInit
-# OverrideInit uses MTK's initialization system to compute consistent initial conditions,
-# then CheckInit verifies the DAE constraints are satisfied.
+# DefaultInit - always use CheckInit to verify initial conditions satisfy DAE constraints.
+# Users must explicitly pass initializealg=OverrideInit() for MTK initialization.
 function perform_initialization!(
         prob, alg, u0, du0, p, t0, f!, abstol, reltol,
         initializealg::DefaultInit,
         info, iwork, differential_vars
     )
-    if prob.f.initialization_data !== nothing
-        return perform_initialization!(
-            prob, alg, u0, du0, p, t0, f!, abstol, reltol,
-            OverrideInit(),
-            info, iwork, differential_vars
-        )
-    else
-        # Use CheckInit by default to verify initial conditions satisfy the DAE constraints
-        # This matches the Sundials v5 pattern
-        return perform_initialization!(
-            prob, alg, u0, du0, p, t0, f!, abstol, reltol,
-            CheckInit(),
-            info, iwork, differential_vars
-        )
-    end
+    return perform_initialization!(
+        prob, alg, u0, du0, p, t0, f!, abstol, reltol,
+        CheckInit(),
+        info, iwork, differential_vars
+    )
 end
 
 # NoInit - do nothing, assume user provided consistent initial conditions
@@ -163,43 +151,28 @@ function perform_initialization!(
         return u0, du0, p, true, Int32(0)
     end
 
-    # ICs are inconsistent - try using SciMLBase's get_initial_values
+    # ICs are inconsistent - use SciMLBase's get_initial_values
     # This is the pattern used by ModelingToolkit
     # Create a minimal integrator-like object for get_initial_values
     integrator = DASKRInitIntegrator(prob, u0, du0, p, t0, abstol, reltol)
 
-    try
-        u0_new, p_new, success = get_initial_values(
-            prob, integrator, prob.f, initializealg, Val(isinplace(prob));
-            abstol = abstol, reltol = reltol
-        )
+    u0_new, p_new, success = get_initial_values(
+        prob, integrator, prob.f, initializealg, Val(isinplace(prob));
+        abstol = abstol, reltol = reltol
+    )
 
-        if !success
-            # Fall back to DASKR's BrownFullBasicInit if available
-            if differential_vars !== nothing
-                @warn "OverrideInit could not compute consistent initial conditions. Falling back to BrownFullBasicInit."
-                return u0, du0, p, true, Int32(1)  # Let DASKR handle it
-            end
-            return u0, du0, p, false, Int32(0)
-        end
-
-        # Update u0 in place
-        if isinplace(prob)
-            u0 .= vec(u0_new)
-        else
-            u0 = vec(u0_new)
-        end
-
-        return u0, du0, p_new, true, Int32(0)
-    catch e
-        # If get_initial_values fails, fall back to DASKR's initialization if possible
-        if differential_vars !== nothing
-            @warn "OverrideInit failed ($e). Falling back to BrownFullBasicInit."
-            return u0, du0, p, true, Int32(1)  # Let DASKR handle it
-        end
-        @warn "OverrideInit failed: $e"
+    if !success
         return u0, du0, p, false, Int32(0)
     end
+
+    # Update u0 in place
+    if isinplace(prob)
+        u0 .= vec(u0_new)
+    else
+        u0 = vec(u0_new)
+    end
+
+    return u0, du0, p_new, true, Int32(0)
 end
 
 """
