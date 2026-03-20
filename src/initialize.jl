@@ -3,6 +3,7 @@
 # https://github.com/SciML/Sundials.jl/blob/master/src/common_interface/initialize.jl
 
 using DiffEqBase: BrownFullBasicInit, ShampineCollocationInit, DefaultInit, NoInit
+import SciMLBase
 using SciMLBase: CheckInit, OverrideInit, isinplace, ReturnCode, get_initial_values
 
 """
@@ -133,35 +134,13 @@ function perform_initialization!(
 end
 
 # OverrideInit - use SciMLBase's get_initial_values (for MTK compatibility)
+# Matches Sundials.jl: always call get_initial_values, no DAE residual pre-check.
+# MTK's initialization solves a different nonlinear system than the DAE constraints.
 function perform_initialization!(
         prob, alg, u0, du0, p, t0, f!, abstol, reltol,
         initializealg::OverrideInit,
         info, iwork, differential_vars
     )
-    # Check if get_initial_values is available and the problem has initialization_data
-    if prob.f.initialization_data === nothing
-        # No initialization data, fall back to CheckInit
-        return perform_initialization!(
-            prob, alg, u0, du0, p, t0, f!, abstol, reltol,
-            CheckInit(),
-            info, iwork, differential_vars
-        )
-    end
-
-    # First check if initial conditions are already consistent
-    # If they are, skip the expensive MTK initialization
-    residual = similar(u0)
-    f!(residual, du0, u0, p, t0)
-    max_residual = maximum(abs.(residual))
-
-    if max_residual < abstol
-        # ICs are already consistent, no initialization needed
-        return u0, du0, p, true, Int32(0)
-    end
-
-    # ICs are inconsistent - use SciMLBase's get_initial_values
-    # This is the pattern used by ModelingToolkit
-    # Create a minimal integrator-like object for get_initial_values
     integrator = DASKRInitIntegrator(prob, u0, du0, p, t0, abstol, reltol)
 
     u0_new, p_new, success = get_initial_values(
@@ -173,7 +152,6 @@ function perform_initialization!(
         return u0, du0, p, false, Int32(0)
     end
 
-    # Update u0 in place
     if isinplace(prob)
         u0 .= vec(u0_new)
     else
@@ -219,3 +197,8 @@ Base.getproperty(integrator::DASKRInitIntegrator, s::Symbol) = begin
         return getfield(integrator, s)
     end
 end
+
+# SymbolicIndexingInterface methods required by get_initial_values
+SciMLBase.state_values(integrator::DASKRInitIntegrator) = getfield(integrator, :u)
+SciMLBase.parameter_values(integrator::DASKRInitIntegrator) = getfield(integrator, :p)
+SciMLBase.current_time(integrator::DASKRInitIntegrator) = getfield(integrator, :t)
