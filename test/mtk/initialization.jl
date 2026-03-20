@@ -5,7 +5,7 @@
 # initialization features (like solving for missing parameters) are not yet
 # fully supported. These tests focus on the working functionality.
 
-using ModelingToolkit, SciMLBase, DASKR, Test, DiffEqBase
+using ModelingToolkit, SciMLBase, DASKR, Test, DiffEqBase, NonlinearSolve
 using SymbolicIndexingInterface
 using ModelingToolkit: t_nounits as t, D_nounits as D
 

@@ -134,13 +134,22 @@ function perform_initialization!(
 end
 
 # OverrideInit - use SciMLBase's get_initial_values (for MTK compatibility)
-# Matches Sundials.jl: always call get_initial_values, no DAE residual pre-check.
+# Matches Sundials.jl: no DAE residual pre-check.
 # MTK's initialization solves a different nonlinear system than the DAE constraints.
 function perform_initialization!(
         prob, alg, u0, du0, p, t0, f!, abstol, reltol,
         initializealg::OverrideInit,
         info, iwork, differential_vars
     )
+    if prob.f.initialization_data === nothing
+        # No initialization data, fall back to CheckInit
+        return perform_initialization!(
+            prob, alg, u0, du0, p, t0, f!, abstol, reltol,
+            CheckInit(),
+            info, iwork, differential_vars
+        )
+    end
+
     integrator = DASKRInitIntegrator(prob, u0, du0, p, t0, abstol, reltol)
 
     u0_new, p_new, success = get_initial_values(
@@ -202,3 +211,4 @@ end
 SciMLBase.state_values(integrator::DASKRInitIntegrator) = getfield(integrator, :u)
 SciMLBase.parameter_values(integrator::DASKRInitIntegrator) = getfield(integrator, :p)
 SciMLBase.current_time(integrator::DASKRInitIntegrator) = getfield(integrator, :t)
+SciMLBase.symbolic_container(integrator::DASKRInitIntegrator) = getfield(integrator, :prob)
