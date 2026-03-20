@@ -18,18 +18,26 @@ For DASKR, INFO(11) controls initialization:
 """
 function perform_initialization! end
 
-# DefaultInit - always use CheckInit to verify initial conditions satisfy DAE constraints.
-# Users must explicitly pass initializealg=OverrideInit() for MTK initialization.
+# DefaultInit - use OverrideInit if initialization_data is provided (MTK problems),
+# otherwise CheckInit to verify initial conditions satisfy DAE constraints.
 function perform_initialization!(
         prob, alg, u0, du0, p, t0, f!, abstol, reltol,
         initializealg::DefaultInit,
         info, iwork, differential_vars
     )
-    return perform_initialization!(
-        prob, alg, u0, du0, p, t0, f!, abstol, reltol,
-        CheckInit(),
-        info, iwork, differential_vars
-    )
+    if prob.f.initialization_data !== nothing
+        return perform_initialization!(
+            prob, alg, u0, du0, p, t0, f!, abstol, reltol,
+            OverrideInit(),
+            info, iwork, differential_vars
+        )
+    else
+        return perform_initialization!(
+            prob, alg, u0, du0, p, t0, f!, abstol, reltol,
+            CheckInit(),
+            info, iwork, differential_vars
+        )
+    end
 end
 
 # NoInit - do nothing, assume user provided consistent initial conditions
