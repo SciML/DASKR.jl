@@ -123,6 +123,7 @@ function DiffEqBase.__solve(
             true : prob.tspan[1] in saveat,
         save_timeseries = nothing, dtmax = nothing,
         userdata = nothing, dt = nothing, alias_u0 = false,
+        initializealg = DefaultInit(),
         kwargs...
     ) where {
         uType, duType, tupType, isinplace,
@@ -253,7 +254,7 @@ function DiffEqBase.__solve(
     info = zeros(Int32, 20)
 
     info[3] = save_everystep
-    info[11] = 0
+    # info[11] is set below after initialization
     info[16] = 0    # == 1 to ignore algebraic variables in the error calculation
     info[17] = 0
     info[18] = 2    # more initialization info
@@ -275,6 +276,25 @@ function DiffEqBase.__solve(
     iwork[1] = alg.jac_lower
     iwork[2] = alg.jac_upper
     iwork[40 .+ (1:N[1])] = id
+
+    # Perform DAE initialization based on initializealg
+    u0, du0, p, init_success, init_type = perform_initialization!(
+        prob, alg, u0, du0, prob.p, t0, f!, abstol, reltol,
+        initializealg, info, iwork, prob.differential_vars
+    )
+
+    if !init_success
+        return DiffEqBase.build_solution(
+            prob, alg, [t0], [reshape(u0, sizeu)],
+            du = [du0],
+            dense = dense,
+            timeseries_errors = timeseries_errors,
+            retcode = ReturnCode.InitialFailure
+        )
+    end
+
+    # Set INFO(11) based on initialization algorithm
+    info[11] = init_type
 
     if dtmax !== nothing
         info[7] = 1

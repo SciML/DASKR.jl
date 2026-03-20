@@ -1,6 +1,7 @@
 using DASKR
 using Test
 using DiffEqBase
+using DiffEqBase: SciMLBase
 using Pkg
 
 const GROUP = get(ENV, "GROUP", "All")
@@ -134,16 +135,18 @@ let
     sol = solve(prob3, daskr())
     @test maximum(sol.u[end]) < 2 #should be cyclic
 
-    # inconsistent initial conditions
+    # inconsistent initial conditions - use BrownFullBasicInit to compute consistent ICs
+    # Note: With DefaultInit → CheckInit (Sundials v5 pattern), inconsistent ICs will error
     function f!(res, du, u, p, t)
         res[1] = du[1] - 1.01
         return
     end
     u0 = [0.0]
     tspan = (0.0, 10.0)
-    du0 = [0.0]
+    du0 = [0.0]  # Inconsistent: should be [1.01] for du[1] - 1.01 = 0
     dae_prob = DAEProblem(f!, du0, u0, tspan, differential_vars = [true])
-    sol = solve(dae_prob, daskr())
+    # Use BrownFullBasicInit to let DASKR compute consistent initial conditions
+    sol = solve(dae_prob, daskr(); initializealg = DiffEqBase.BrownFullBasicInit())
 
     # Jacobian
     function f2!(res, du, u, p, t)
@@ -168,6 +171,53 @@ let
     nothing
 end
 
+# Test DAE initialization algorithms
+@testset "DAE Initialization" begin
+    function init_resrob(r, yp, y, p, tres)
+        r[1] = -0.04 * y[1] + 1.0e4 * y[2] * y[3]
+        r[2] = -r[1] - 3.0e7 * y[2] * y[2] - yp[2]
+        r[1] -= yp[1]
+        return r[3] = y[1] + y[2] + y[3] - 1.0
+    end
+
+    u0 = [1.0, 0, 0]
+    du0 = [-0.04, 0.04, 0.0]  # Consistent initial conditions
+
+    # Test NoInit
+    prob = DAEProblem(init_resrob, du0, u0, (0.0, 100.0))
+    sol = solve(prob, daskr(); initializealg = DiffEqBase.NoInit())
+    @test sol.retcode == ReturnCode.Success
+
+    # Test CheckInit with consistent ICs
+    sol = solve(prob, daskr(); initializealg = SciMLBase.CheckInit())
+    @test sol.retcode == ReturnCode.Success
+
+    # Test CheckInit with inconsistent ICs (should error)
+    bad_du0 = [0.0, 0.0, 0.0]
+    prob_bad = DAEProblem(init_resrob, bad_du0, u0, (0.0, 100.0))
+    @test_throws ErrorException solve(prob_bad, daskr(); initializealg = SciMLBase.CheckInit())
+
+    # Test BrownFullBasicInit (requires differential_vars)
+    prob_with_diffvars = DAEProblem(
+        init_resrob, bad_du0, u0, (0.0, 100.0),
+        differential_vars = [true, true, false]
+    )
+    sol = solve(prob_with_diffvars, daskr(); initializealg = DiffEqBase.BrownFullBasicInit())
+    @test sol.retcode == ReturnCode.Success
+
+    # Test ShampineCollocationInit
+    sol = solve(prob_with_diffvars, daskr(); initializealg = DiffEqBase.ShampineCollocationInit())
+    @test sol.retcode == ReturnCode.Success
+
+    # Test OverrideInit (falls back to CheckInit when no initialization_data)
+    sol = solve(prob, daskr(); initializealg = SciMLBase.OverrideInit())
+    @test sol.retcode == ReturnCode.Success
+
+    # Test DefaultInit (should use CheckInit by default, matching Sundials v5 pattern)
+    sol = solve(prob, daskr(); initializealg = DiffEqBase.DefaultInit())
+    @test sol.retcode == ReturnCode.Success
+end
+
 # NoPre group: JET static analysis tests
 # Only run on non-prerelease Julia versions
 if GROUP == "NoPre" && isempty(VERSION.prerelease)
@@ -175,4 +225,12 @@ if GROUP == "NoPre" && isempty(VERSION.prerelease)
     Pkg.develop(PackageSpec(path = dirname(@__DIR__)))
     Pkg.instantiate()
     @time include("nopre/jet.jl")
+end
+
+# MTK group: ModelingToolkit integration tests
+if GROUP == "MTK"
+    Pkg.activate(joinpath(@__DIR__, "mtk"))
+    Pkg.develop(PackageSpec(path = dirname(@__DIR__)))
+    Pkg.instantiate()
+    @time include("mtk/initialization.jl")
 end

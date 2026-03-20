@@ -5,6 +5,7 @@ using DASKR_jll
 using Libdl
 
 include("core.jl")
+include("initialize.jl")
 include("common.jl")
 
 const warnkeywords = (
