@@ -387,31 +387,31 @@ function DiffEqBase.__solve(
     ### Finishing Routine
 
     if idid[1] == -1
-        @SciMLMessage("Too many steps taken (maxiters exceeded).", verbose, :max_iters)
+        @SciMLMessage("Too many steps taken (maxiters exceeded).", verbose, :instability)
     elseif idid[1] == -2
-        @SciMLMessage("Error tolerances too stringent.", verbose, :convergence_limit)
+        @SciMLMessage("Error tolerances too stringent.", verbose, :instability)
     elseif idid[1] == -3
-        @SciMLMessage("Local error test repeatedly failed; step size too small.", verbose, :step_rejected)
+        @SciMLMessage("Local error test repeatedly failed; step size too small.", verbose, :instability)
     elseif idid[1] == -5
-        @SciMLMessage("Repeated failures in Jacobian/preconditioner computation.", verbose, :jacobian_update)
+        @SciMLMessage("Repeated failures in Jacobian/preconditioner computation.", verbose, :instability)
     elseif idid[1] == -6
-        @SciMLMessage("Repeated error test failures.", verbose, :step_rejected)
+        @SciMLMessage("Repeated error test failures.", verbose, :instability)
     elseif idid[1] == -7
-        @SciMLMessage("Nonlinear solver convergence failure.", verbose, :newton_convergence)
+        @SciMLMessage("Nonlinear solver convergence failure.", verbose, :instability)
     elseif idid[1] == -8
-        @SciMLMessage("Singular Jacobian matrix.", verbose, :near_singular)
+        @SciMLMessage("Singular Jacobian matrix.", verbose, :instability)
     elseif idid[1] == -9
-        @SciMLMessage("Multiple convergence and error test failures.", verbose, :convergence_limit)
+        @SciMLMessage("Multiple convergence and error test failures.", verbose, :instability)
     elseif idid[1] == -10
-        @SciMLMessage("Convergence failure (IRES = -1 from residual function).", verbose, :newton_convergence)
+        @SciMLMessage("Convergence failure (IRES = -1 from residual function).", verbose, :instability)
     elseif idid[1] == -11
         @SciMLMessage("Unrecoverable error in residual function (IRES = -2).", verbose, :instability)
     elseif idid[1] == -12
-        @SciMLMessage("Failed to compute consistent initial Y, YPRIME.", verbose, :inconsistent_input)
+        @SciMLMessage("Failed to compute consistent initial Y, YPRIME.", verbose, :instability)
     elseif idid[1] == -13
-        @SciMLMessage("Unrecoverable error in PSOL (preconditioner solve).", verbose, :w_factorization)
+        @SciMLMessage("Unrecoverable error in PSOL (preconditioner solve).", verbose, :instability)
     elseif idid[1] == -14
-        @SciMLMessage("Krylov linear solver convergence failure.", verbose, :newton_convergence)
+        @SciMLMessage("Krylov linear solver convergence failure.", verbose, :instability)
     elseif idid[1] < 0
         @SciMLMessage("DASKR solver failed with IDID = $(idid[1]).", verbose, :instability)
     end
