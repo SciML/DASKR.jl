@@ -130,12 +130,13 @@ function DiffEqBase.__solve(
         LinearSolver,
     }
     tType = eltype(tupType)
+    verbose = _process_verbose_param(verbose)
 
     if verbose
         warned = !isempty(kwargs) && check_keywords(alg, kwargs, warnlist)
         if !(prob.f isa DiffEqBase.AbstractParameterizedFunction)
             if DiffEqBase.has_tgrad(prob.f)
-                @warn("Explicit t-gradient given to this stiff solver is ignored.")
+                @SciMLMessage("Explicit t-gradient given to this stiff solver is ignored.", verbose, :tgrad_ignored)
                 warned = true
             end
         end
@@ -284,6 +285,7 @@ function DiffEqBase.__solve(
     )
 
     if !init_success
+        @SciMLMessage("DAE initialization failed. Returning InitialFailure.", verbose, :initialization_failure)
         return DiffEqBase.build_solution(
             prob, alg, [t0], [reshape(u0, sizeu)],
             du = [du0],
@@ -385,6 +387,39 @@ function DiffEqBase.__solve(
         end
     end
     ### Finishing Routine
+
+    if idid[1] < 0
+        msg = if idid[1] == -1
+            "Too many steps taken (maxiters exceeded)."
+        elseif idid[1] == -2
+            "Error tolerances too stringent."
+        elseif idid[1] == -3
+            "Local error test repeatedly failed; step size too small."
+        elseif idid[1] == -5
+            "Repeated failures in Jacobian/preconditioner computation."
+        elseif idid[1] == -6
+            "Repeated error test failures."
+        elseif idid[1] == -7
+            "Nonlinear solver convergence failure."
+        elseif idid[1] == -8
+            "Singular Jacobian matrix."
+        elseif idid[1] == -9
+            "Multiple convergence and error test failures."
+        elseif idid[1] == -10
+            "Convergence failure (IRES = -1 from residual function)."
+        elseif idid[1] == -11
+            "Unrecoverable error in residual function (IRES = -2)."
+        elseif idid[1] == -12
+            "Failed to compute consistent initial Y, YPRIME."
+        elseif idid[1] == -13
+            "Unrecoverable error in PSOL (preconditioner solve)."
+        elseif idid[1] == -14
+            "Krylov linear solver convergence failure."
+        else
+            "DASKR solver failed with IDID = $(idid[1])."
+        end
+        @SciMLMessage(msg, verbose, :solver_failure)
+    end
 
     if idid[1] == -1
         retcode = ReturnCode.MaxIters
