@@ -15,7 +15,7 @@ SciMLLogging = "a6db7da4-7206-11f0-1eab-35f2a5dbe1d1"
 [compat]
 Compat = "4.1"
 DASKR_jll = "1"
-DiffEqBase = "6.217"
+DiffEqBase = "6.217, 7"
 PrecompileTools = "1.2"
 Reexport = "1.0"
 SciMLBase = "2.119, 3.1"
