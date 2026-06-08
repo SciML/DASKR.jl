@@ -1,0 +1,9 @@
+[All]
+versions = ["1", "lts", "pre"]
+os = ["ubuntu-latest", "macos-latest", "windows-latest"]
+
+[NoPre]
+versions = ["1", "lts"]
+
+[MTK]
+versions = ["1"]
