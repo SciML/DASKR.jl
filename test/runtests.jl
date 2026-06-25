@@ -30,6 +30,10 @@ run_tests(;
             end,
         ),
     ),
+    qa = (;
+        env = joinpath(@__DIR__, "qa"),
+        body = joinpath(@__DIR__, "qa", "qa.jl"),
+    ),
     # The original runtests.jl ran the core interface tests unconditionally (no GROUP
     # guard) and then, for NoPre/MTK, additionally ran the group file in its sub-env.
     # Reproduce that "core (main env) + group (sub-env)" composition per GROUP value.

@@ -3,7 +3,7 @@ module DASKR
 using Compat
 using DASKR_jll
 using Libdl
-using SciMLLogging: SciMLLogging, Standard, @SciMLMessage
+using SciMLLogging: SciMLLogging, @SciMLMessage
 using DiffEqBase: DEVerbosity
 
 _process_verbose_param(v::SciMLLogging.AbstractVerbosityPreset) = DEVerbosity(v)
