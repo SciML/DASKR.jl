@@ -25,21 +25,21 @@ run_qa(
                 :current_time, :parameter_values, :state_values, :symbolic_container,
             ),
         ),
-        # Same names are non-public in the module they are accessed from: the
-        # DiffEqBase/SciMLBase interface names above, the SciMLBase.ReturnCode enum
-        # values, and Base.@pure. All become public as those modules declare their
-        # public API (Base.@pure is a stable Base internal).
+        # Still non-public on the registered releases (SciMLBase 3.24.0 / DiffEqBase 7.5.7):
+        # the DiffEqBase DAE-interface names DASKR subtypes/extends/calls, the
+        # SymbolicIndexingInterface accessors reached through SciMLBase, and Base.@pure (a
+        # stable Base internal). The SciMLBase.ReturnCode enum values DASKR uses ARE now
+        # public, so they no longer need ignoring.
         all_qualified_accesses_are_public = (;
             ignore = (
                 Symbol("@pure"),
                 :AbstractDAEAlgorithm, :AbstractDAEProblem, :AbstractParameterizedFunction,
                 :__solve, :build_solution, :has_jac, :has_tgrad,
                 :current_time, :parameter_values, :state_values, :symbolic_container,
-                :ConvergenceFailure, :Failure, :InitialFailure, :MaxIters, :Success,
             ),
         ),
-        # OverrideInit / get_initial_values are non-public in SciMLBase (the DAE
-        # initialization API DASKR implements); public once SciMLBase declares them.
+        # OverrideInit / get_initial_values are still non-public in SciMLBase 3.24.0 (the
+        # DAE initialization API DASKR implements).
         all_explicit_imports_are_public = (;
             ignore = (:OverrideInit, :get_initial_values),
         ),
