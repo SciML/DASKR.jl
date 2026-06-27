@@ -3,9 +3,10 @@
 using Reexport
 @reexport using DiffEqBase
 import DiffEqBase: solve
+import SciMLBase
 
 # Abstract Types
-abstract type DASKRDAEAlgorithm{LinearSolver} <: DiffEqBase.AbstractDAEAlgorithm end
+abstract type DASKRDAEAlgorithm{LinearSolver} <: SciMLBase.AbstractDAEAlgorithm end
 
 # DAE Algorithms
 """
@@ -107,7 +108,7 @@ export daskr
 ## Solve for DAEs uses raw_solver
 
 function DiffEqBase.__solve(
-        prob::DiffEqBase.AbstractDAEProblem{
+        prob::SciMLBase.AbstractDAEProblem{
             uType, duType, tupType,
             isinplace,
         },
@@ -284,7 +285,7 @@ function DiffEqBase.__solve(
 
     if !init_success
         @SciMLMessage("DAE initialization failed. Returning InitialFailure.", verbose, :inconsistent_input)
-        return DiffEqBase.build_solution(
+        return SciMLBase.build_solution(
             prob, alg, [t0], [reshape(u0, sizeu)],
             du = [du0],
             dense = dense,
@@ -340,7 +341,7 @@ function DiffEqBase.__solve(
     res, rpar = DASKR.common_res_c(f!, prob.p)
     rt = Int32[0]
 
-    if DiffEqBase.has_jac(f!)
+    if SciMLBase.has_jac(f!)
         # Get just the callback pointer - we reuse rpar from common_res_c
         # Both res and jac callbacks share the same userdata (rpar) which
         # contains the function and parameters
@@ -439,7 +440,7 @@ function DiffEqBase.__solve(
         end
     end
 
-    return DiffEqBase.build_solution(
+    return SciMLBase.build_solution(
         prob, alg, ts, timeseries,
         du = dures,
         dense = dense,
