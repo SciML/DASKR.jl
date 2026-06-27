@@ -25,14 +25,13 @@ run_qa(
         ),
         # Genuinely-non-public names on the registered releases (SciMLBase 3.27.0 /
         # DiffEqBase 7.6.0): the DAE-interface hooks DASKR extends/calls via DiffEqBase
-        # (__solve, has_tgrad, AbstractParameterizedFunction -- not public in DiffEqBase),
-        # the SymbolicIndexingInterface accessors reached through SciMLBase, and Base.@pure
-        # (a stable Base internal).
+        # (__solve, has_tgrad, AbstractParameterizedFunction -- not public in DiffEqBase)
+        # and Base.@pure (a stable Base internal). The SymbolicIndexingInterface accessors
+        # are now extended on their owner directly, where they are public.
         all_qualified_accesses_are_public = (;
             ignore = (
                 Symbol("@pure"),
                 :AbstractParameterizedFunction, :__solve, :has_tgrad,
-                :current_time, :parameter_values, :state_values, :symbolic_container,
             ),
         ),
     ),
