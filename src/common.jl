@@ -134,8 +134,8 @@ function DiffEqBase.__solve(
     verbose = _process_verbose_param(verbose)
 
     warned = !isempty(kwargs) && check_keywords(alg, kwargs, warnlist)
-    if !(prob.f isa DiffEqBase.AbstractParameterizedFunction)
-        if DiffEqBase.has_tgrad(prob.f)
+    if !(prob.f isa SciMLBase.AbstractParameterizedFunction)
+        if SciMLBase.has_tgrad(prob.f)
             @SciMLMessage("Explicit t-gradient given to this stiff solver is ignored.", verbose, :inconsistent_input)
             warned = true
         end
