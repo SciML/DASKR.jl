@@ -13,21 +13,19 @@ run_qa(
     # https://github.com/SciML/DASKR.jl/issues/102
     ei_broken = (:no_implicit_imports,),
     ei_kwargs = (;
-        # Owner-aware view: DiffEqBase.__solve / has_tgrad / AbstractParameterizedFunction
-        # are owned by SciMLBase but accessed via DiffEqBase (DASKR's declared dep, where
-        # they live as the canonical DAE interface), and the state/parameter accessors are
-        # owned by SymbolicIndexingInterface but accessed via SciMLBase.
+        # `__solve` is owned by SciMLBase but DASKR extends it as `DiffEqBase.__solve`
+        # (the canonical DAE-interface entry point in DASKR's declared dep DiffEqBase;
+        # `SciMLBase.__solve === DiffEqBase.__solve`). It is not public in SciMLBase
+        # either, so it cannot yet be migrated to the owner -- pending SciMLBase#1411.
         all_qualified_accesses_via_owners = (;
             ignore = (
-                :AbstractParameterizedFunction, :__solve, :has_tgrad,
-                :current_time, :parameter_values, :state_values, :symbolic_container,
+                :__solve,
             ),
         ),
         # Genuinely-non-public names on the registered releases (SciMLBase 3.28.1 /
         # DiffEqBase 7.6.0): DiffEqBase.__solve (the DAE-interface entry point DASKR
         # extends -- not public in SciMLBase either) and Base.@pure (a stable Base
-        # internal). has_tgrad and AbstractParameterizedFunction are public in SciMLBase
-        # and are now accessed via SciMLBase directly, so they no longer need ignoring.
+        # internal).
         all_qualified_accesses_are_public = (;
             ignore = (
                 Symbol("@pure"),
