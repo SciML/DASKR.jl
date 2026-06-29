@@ -1,9 +1,11 @@
 # DASKR.jl JuliaDiffEq common algorithms
 
-using Reexport
+using Reexport: Reexport, @reexport
+using DiffEqBase: DiffEqBase
 @reexport using DiffEqBase
 import DiffEqBase: solve
 import SciMLBase
+using SciMLBase: check_keywords, warn_compat
 
 # Abstract Types
 abstract type DASKRDAEAlgorithm{LinearSolver} <: SciMLBase.AbstractDAEAlgorithm end
@@ -76,7 +78,7 @@ struct daskr{LinearSolver, NNEA, MKI, MKV} <: DASKRDAEAlgorithm{LinearSolver}
     krylov_convergence_test_constant::Float64
     exclude_algebraic_errors::Bool
 end
-Base.@pure function daskr(;
+function daskr(;
         linear_solver = :Dense,
         jac_upper = 0, jac_lower = 0, max_order = 5,
         non_negativity_enforcement = 0,
@@ -87,7 +89,7 @@ Base.@pure function daskr(;
         krylov_convergence_test_constant = 0.05,
         exclude_algebraic_errors = false
     )
-    daskr{
+    return daskr{
         linear_solver, typeof(non_negativity_enforcement_array),
         typeof(max_krylov_iters), typeof(num_krylov_vectors),
     }(
@@ -107,7 +109,7 @@ export daskr
 
 ## Solve for DAEs uses raw_solver
 
-function DiffEqBase.__solve(
+function SciMLBase.__solve(
         prob::SciMLBase.AbstractDAEProblem{
             uType, duType, tupType,
             isinplace,
@@ -338,14 +340,14 @@ function DiffEqBase.__solve(
     jroot = zeros(Int32, max(nrt[1], 1))
     ipar = Int32[length(u0), nrt[1], length(u0)]
     # common_res_c returns (callback, userdata) - userdata is passed as rpar
-    res, rpar = DASKR.common_res_c(f!, prob.p)
+    res, rpar = common_res_c(f!, prob.p)
     rt = Int32[0]
 
     if SciMLBase.has_jac(f!)
         # Get just the callback pointer - we reuse rpar from common_res_c
         # Both res and jac callbacks share the same userdata (rpar) which
         # contains the function and parameters
-        jac, _ = DASKR.common_jac_c(f!, prob.p)
+        jac, _ = common_jac_c(f!, prob.p)
         info[5] = 1 # Enables Jacobian
     else
         jac = Int32[0]
@@ -370,7 +372,7 @@ function DiffEqBase.__solve(
     for k in start_idx:length(save_ts)
         tout = [save_ts[k]]
         while t[1] < save_ts[k]
-            DASKR.unsafe_solve(
+            unsafe_solve(
                 res, N, t, u, du, tout, info, rtol, atol, idid, rwork,
                 lrw, iwork, liw, rpar, ipar, jac, psol, rt, nrt, jroot
             )

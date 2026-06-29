@@ -1,8 +1,8 @@
 module DASKR
 
-using Compat
-using DASKR_jll
-using Libdl
+using Compat: Compat
+using DASKR_jll: DASKR_jll, libdaskr
+using Libdl: Libdl
 using SciMLLogging: SciMLLogging, @SciMLMessage
 using DiffEqBase: DEVerbosity
 
