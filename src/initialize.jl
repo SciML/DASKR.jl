@@ -5,6 +5,7 @@
 using DiffEqBase: BrownFullBasicInit, ShampineCollocationInit, DefaultInit, NoInit
 import SciMLBase
 using SciMLBase: CheckInit, OverrideInit, isinplace, ReturnCode, get_initial_values
+import SymbolicIndexingInterface
 
 """
     perform_initialization!(prob, alg, u0, du0, p, t0, f!, abstol, reltol, initializealg, info, iwork, differential_vars)
@@ -208,7 +209,7 @@ Base.getproperty(integrator::DASKRInitIntegrator, s::Symbol) = begin
 end
 
 # SymbolicIndexingInterface methods required by get_initial_values
-SciMLBase.state_values(integrator::DASKRInitIntegrator) = getfield(integrator, :u)
-SciMLBase.parameter_values(integrator::DASKRInitIntegrator) = getfield(integrator, :p)
-SciMLBase.current_time(integrator::DASKRInitIntegrator) = getfield(integrator, :t)
-SciMLBase.symbolic_container(integrator::DASKRInitIntegrator) = getfield(integrator, :prob)
+SymbolicIndexingInterface.state_values(integrator::DASKRInitIntegrator) = getfield(integrator, :u)
+SymbolicIndexingInterface.parameter_values(integrator::DASKRInitIntegrator) = getfield(integrator, :p)
+SymbolicIndexingInterface.current_time(integrator::DASKRInitIntegrator) = getfield(integrator, :t)
+SymbolicIndexingInterface.symbolic_container(integrator::DASKRInitIntegrator) = getfield(integrator, :prob)
