@@ -1,5 +1,5 @@
 # Precompilation workload for DASKR.jl
-using PrecompileTools
+using PrecompileTools: PrecompileTools, @compile_workload, @setup_workload
 
 @setup_workload begin
     # Minimal setup - avoid heavy dependencies

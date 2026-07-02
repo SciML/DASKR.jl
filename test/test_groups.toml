@@ -7,3 +7,6 @@ versions = ["1", "lts"]
 
 [MTK]
 versions = ["1"]
+
+[QA]
+versions = ["1", "lts"]
