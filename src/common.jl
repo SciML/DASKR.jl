@@ -12,17 +12,13 @@ abstract type DASKRDAEAlgorithm{LinearSolver} <: SciMLBase.AbstractDAEAlgorithm 
 
 # DAE Algorithms
 """
-```julia
-function daskr(;linear_solver=:Dense,
-                  jac_upper=0,jac_lower=0,max_order = 5,
-                  non_negativity_enforcement = 0,
-                  non_negativity_enforcement_array = nothing,
-                  max_krylov_iters = nothing,
-                  num_krylov_vectors = nothing,
-                  max_number_krylov_restarts = 5,
-                  krylov_convergence_test_constant = 0.05,
-                  exclude_algebraic_errors = false)
-```
+    daskr(; linear_solver = :Dense, jac_upper = 0, jac_lower = 0,
+        max_order = 5, non_negativity_enforcement = 0,
+        non_negativity_enforcement_array = nothing,
+        max_krylov_iters = nothing, num_krylov_vectors = nothing,
+        max_number_krylov_restarts = 5,
+        krylov_convergence_test_constant = 0.05,
+        exclude_algebraic_errors = false)
 
 This is a wrapper for the well-known DASKR algorithm.
 
@@ -65,6 +61,20 @@ Choices for the linear solver are:
 - `krylov_convergence_test_constant = 0.05`: Some constant in DASKR's convergence test.
 - `exclude_algebraic_errors = false`: whether algebraic variables are included in the
   adaptive time stepping error check. Defaults to false.
+
+# Examples
+
+```julia
+using DASKR, DiffEqBase
+
+residual!(out, du, u, p, t) = (out[1] = du[1] + u[1]; nothing)
+du0 = [-1.0]
+u0 = [1.0]
+tspan = (0.0, 1.0)
+prob = DAEProblem(residual!, du0, u0, tspan)
+
+sol = solve(prob, daskr())
+```
 """
 struct daskr{LinearSolver, NNEA, MKI, MKV} <: DASKRDAEAlgorithm{LinearSolver}
     jac_upper::Int
