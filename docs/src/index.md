@@ -1,0 +1,5 @@
+# DASKR.jl
+
+```@docs
+daskr
+```
