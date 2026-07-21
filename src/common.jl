@@ -1,13 +1,11 @@
 # DASKR.jl JuliaDiffEq common algorithms
 
-using Reexport: @reexport
+using Reexport: Reexport, @reexport
 using DiffEqBase: DiffEqBase
-@reexport using DiffEqBase: DAEProblem
+@reexport using DiffEqBase
 import DiffEqBase: solve
 import SciMLBase
 using SciMLBase: check_keywords, warn_compat
-
-export solve
 
 # Abstract Types
 abstract type DASKRDAEAlgorithm{LinearSolver} <: SciMLBase.AbstractDAEAlgorithm end
