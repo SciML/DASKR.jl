@@ -5,6 +5,12 @@ os = ["ubuntu-latest", "macos-latest", "windows-latest"]
 [NoPre]
 versions = ["1", "lts"]
 
+["NoPre 32-bit"]
+group = "NoPre"
+versions = ["1"]
+os = ["ubuntu-latest"]
+arch = "x86"
+
 [MTK]
 versions = ["1"]
 
