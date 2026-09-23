@@ -385,12 +385,22 @@ function SciMLBase.__solve(
                 res, N, t, u, du, tout, info, rtol, atol, idid, rwork,
                 lrw, iwork, liw, rpar, ipar, jac, psol, rt, nrt, jroot
             )
+            if idid[1] == -1 && iwork[11] < maxiters
+                # DDASKR returns IDID = -1 every 500 internal steps and sets
+                # INFO(1) = -1; resetting INFO(1) = 1 continues the integration.
+                info[1] = 1
+                continue
+            end
             if idid[1] < 0
                 break
             end
             push!(ures, copy(u))
             push!(ts, t[1])
             dense && push!(dures, copy(du))
+            if iwork[11] >= maxiters && t[1] < save_ts[end]
+                idid[1] = -1
+                break
+            end
         end
         if idid[1] < 0
             break

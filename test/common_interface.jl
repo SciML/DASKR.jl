@@ -157,3 +157,23 @@ end
     sol = solve(prob, daskr(); initializealg = DiffEqBase.DefaultInit())
     @test sol.retcode == ReturnCode.Success
 end
+
+# DDASKR returns IDID = -1 every 500 internal steps; the solve must continue
+# until tspan[2] and only stop with MaxIters once `maxiters` steps are taken.
+let
+    prob = DAEProblem(
+        resrob, [-0.04, 0.04, 0.0], [1.0, 0.0, 0.0], (0.0, 100000.0),
+        differential_vars = [true, true, false]
+    )
+    for save_everystep in (false, true)
+        sol = solve(prob, daskr(); abstol = 1.0e-10, reltol = 1.0e-7, save_everystep)
+        @test SciMLBase.successful_retcode(sol)
+        @test sol.t[end] == 100000.0
+        @test sum(sol.u[end]) ≈ 1.0
+        sol = solve(
+            prob, daskr(); abstol = 1.0e-10, reltol = 1.0e-7, save_everystep,
+            maxiters = 100
+        )
+        @test sol.retcode == SciMLBase.ReturnCode.MaxIters
+    end
+end
