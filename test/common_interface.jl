@@ -57,7 +57,7 @@ let
     @test_throws ErrorException solve(
         prob, daskr(), saveat = saveat,
         save_everystep = true,
-        callback = (() -> true)
+        callback = DiscreteCallback((u, t, integrator) -> false, integrator -> nothing)
     )
 
     # Check for warnings
@@ -156,4 +156,86 @@ end
     # Test DefaultInit (should use CheckInit by default, matching Sundials v5 pattern)
     sol = solve(prob, daskr(); initializealg = DiffEqBase.DefaultInit())
     @test sol.retcode == ReturnCode.Success
+end
+
+# DDASKR returns IDID = -1 every 500 internal steps; the solve must continue
+# until tspan[2] and only stop with MaxIters once `maxiters` steps are taken.
+# `maxiters` that are not multiples of 500 must agree across save modes.
+let
+    prob = DAEProblem(
+        resrob, [-0.04, 0.04, 0.0], [1.0, 0.0, 0.0], (0.0, 100000.0),
+        differential_vars = [true, true, false]
+    )
+    sol_ref = solve(
+        prob, daskr(); abstol = 1.0e-10, reltol = 1.0e-7, save_everystep = true
+    )
+    nsteps = length(sol_ref.t) - 1
+    for save_everystep in (false, true)
+        sol = solve(prob, daskr(); abstol = 1.0e-10, reltol = 1.0e-7, save_everystep)
+        @test SciMLBase.successful_retcode(sol)
+        @test sol.t[end] == 100000.0
+        @test sum(sol.u[end]) ≈ 1.0
+        sol = solve(
+            prob, daskr(); abstol = 1.0e-10, reltol = 1.0e-7, save_everystep,
+            maxiters = 100
+        )
+        @test sol.retcode == SciMLBase.ReturnCode.MaxIters
+        # 600 is past the first 500-step IDID=-1 boundary but below the finish
+        # (~nsteps), so both modes must return MaxIters.
+        @test 600 < nsteps
+        sol = solve(
+            prob, daskr(); abstol = 1.0e-10, reltol = 1.0e-7, save_everystep,
+            maxiters = 600
+        )
+        @test sol.retcode == SciMLBase.ReturnCode.MaxIters
+        @test sol.t[end] < 100000.0
+        # Finishing on the last allowed step is Success, not MaxIters.
+        sol = solve(
+            prob, daskr(); abstol = 1.0e-10, reltol = 1.0e-7, save_everystep,
+            maxiters = nsteps
+        )
+        @test SciMLBase.successful_retcode(sol)
+        @test sol.t[end] == 100000.0
+        sol = solve(
+            prob, daskr(); abstol = 1.0e-10, reltol = 1.0e-7, save_everystep,
+            maxiters = nsteps - 1
+        )
+        @test sol.retcode == SciMLBase.ReturnCode.MaxIters
+    end
+end
+
+# Interval-output mode must honour a tiny maxiters budget (not only at the
+# 500-step IDID=-1 boundary). With dtmax = 0.01 this needs ≥100 steps.
+let
+    function decay!(res, du, u, p, t)
+        res[1] = -u[1] - du[1]
+        return nothing
+    end
+    prob = DAEProblem(
+        decay!, [-1.0], [1.0], (0.0, 1.0), differential_vars = [true]
+    )
+    sol = solve(
+        prob, daskr(); abstol = 1.0e-8, reltol = 1.0e-6,
+        save_everystep = false, dtmax = 0.01, maxiters = 1
+    )
+    @test sol.retcode == SciMLBase.ReturnCode.MaxIters
+    sol = solve(
+        prob, daskr(); abstol = 1.0e-8, reltol = 1.0e-6,
+        save_everystep = true, dtmax = 0.01, maxiters = 1
+    )
+    @test sol.retcode == SciMLBase.ReturnCode.MaxIters
+end
+
+# Empty CallbackSet is allowed; a real DiscreteCallback is not.
+let
+    prob = DAEProblem(
+        resrob, [-0.04, 0.04, 0.0], [1.0, 0.0, 0.0], (0.0, 1.0),
+        differential_vars = [true, true, false]
+    )
+    sol = solve(prob, daskr(); callback = SciMLBase.CallbackSet())
+    @test SciMLBase.successful_retcode(sol)
+    @test_throws ErrorException solve(
+        prob, daskr();
+        callback = DiscreteCallback((u, t, integrator) -> false, integrator -> nothing)
+    )
 end

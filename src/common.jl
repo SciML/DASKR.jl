@@ -7,6 +7,20 @@ using SciMLBase: check_keywords, warn_compat
 # Abstract Types
 abstract type DASKRDAEAlgorithm{LinearSolver} <: SciMLBase.AbstractDAEAlgorithm end
 
+# DiffEqBase may pass an empty CallbackSet; only real callbacks are unsupported.
+# Local predicate (DiffEqBase.has_callbacks is not part of DiffEqBase's public API).
+function _daskr_has_callback(cb)
+    cb === nothing && return false
+    if cb isa SciMLBase.CallbackSet
+        return !(isempty(cb.continuous_callbacks) && isempty(cb.discrete_callbacks))
+    end
+    return true
+end
+function _daskr_has_callback(callback, prob)
+    return _daskr_has_callback(callback) ||
+        _daskr_has_callback(get(prob.kwargs, :callback, nothing))
+end
+
 # DAE Algorithms
 """
     daskr(;
@@ -153,7 +167,8 @@ function SciMLBase.__solve(
     end
     warned && warn_compat()
 
-    if callback !== nothing || :callback in keys(prob.kwargs)
+    # DiffEqBase may pass an empty CallbackSet; only real callbacks are unsupported.
+    if _daskr_has_callback(callback, prob)
         error("DASKR is not compatible with callbacks.")
     end
 
@@ -381,16 +396,38 @@ function SciMLBase.__solve(
     for k in start_idx:length(save_ts)
         tout = [save_ts[k]]
         while t[1] < save_ts[k]
+            # When remaining budget is below DDASKR's 500-step IDID=-1 chunk,
+            # use intermediate-output mode so maxiters matches across save modes.
+            steps_taken = Int(iwork[11])
+            if !save_everystep && (maxiters - steps_taken) < 500
+                info[3] = Int32(1)
+            end
             unsafe_solve(
                 res, N, t, u, du, tout, info, rtol, atol, idid, rwork,
                 lrw, iwork, liw, rpar, ipar, jac, psol, rt, nrt, jroot
             )
+            if idid[1] == -1 && iwork[11] < maxiters
+                # DDASKR returns IDID = -1 every 500 internal steps and sets
+                # INFO(1) = -1; resetting INFO(1) = 1 continues the integration.
+                info[1] = 1
+                continue
+            end
             if idid[1] < 0
                 break
             end
-            push!(ures, copy(u))
-            push!(ts, t[1])
-            dense && push!(dures, copy(du))
+            # Temporary intermediate mode for budget control must not invent
+            # save points; still save when we hit this output time.
+            if save_everystep || t[1] >= save_ts[k]
+                push!(ures, copy(u))
+                push!(ts, t[1])
+                dense && push!(dures, copy(du))
+            end
+            # Only MaxIters when work remains (finishing on the last allowed
+            # step is Success, matching OrdinaryDiffEq).
+            if iwork[11] >= maxiters && t[1] < save_ts[end]
+                idid[1] = -1
+                break
+            end
         end
         if idid[1] < 0
             break
