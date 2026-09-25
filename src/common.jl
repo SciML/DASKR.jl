@@ -7,6 +7,20 @@ using SciMLBase: check_keywords, warn_compat
 # Abstract Types
 abstract type DASKRDAEAlgorithm{LinearSolver} <: SciMLBase.AbstractDAEAlgorithm end
 
+# DiffEqBase may pass an empty CallbackSet; only real callbacks are unsupported.
+# Local predicate (DiffEqBase.has_callbacks is not part of DiffEqBase's public API).
+function _daskr_has_callback(cb)
+    cb === nothing && return false
+    if cb isa SciMLBase.CallbackSet
+        return !(isempty(cb.continuous_callbacks) && isempty(cb.discrete_callbacks))
+    end
+    return true
+end
+function _daskr_has_callback(callback, prob)
+    return _daskr_has_callback(callback) ||
+        _daskr_has_callback(get(prob.kwargs, :callback, nothing))
+end
+
 # DAE Algorithms
 """
     daskr(;
@@ -154,7 +168,7 @@ function SciMLBase.__solve(
     warned && warn_compat()
 
     # DiffEqBase may pass an empty CallbackSet; only real callbacks are unsupported.
-    if DiffEqBase.has_callbacks((; callback)) || DiffEqBase.has_callbacks(prob.kwargs)
+    if _daskr_has_callback(callback, prob)
         error("DASKR is not compatible with callbacks.")
     end
 
@@ -382,12 +396,8 @@ function SciMLBase.__solve(
     for k in start_idx:length(save_ts)
         tout = [save_ts[k]]
         while t[1] < save_ts[k]
-            # DDASKR's interval-output mode (INFO(3) = 0) only returns every
-            # 500 steps with IDID = -1, so a maxiters budget smaller than the
-            # remaining chunk would otherwise overshoot by up to 499 steps.
-            # Switch to intermediate-output mode when the remaining budget is
-            # below that chunk size so maxiters is enforced the same way for
-            # save_everystep = false and true.
+            # When remaining budget is below DDASKR's 500-step IDID=-1 chunk,
+            # use intermediate-output mode so maxiters matches across save modes.
             steps_taken = Int(iwork[11])
             if !save_everystep && (maxiters - steps_taken) < 500
                 info[3] = Int32(1)
@@ -405,14 +415,16 @@ function SciMLBase.__solve(
             if idid[1] < 0
                 break
             end
-            # Temporary intermediate mode used only for budget control must
-            # not invent save points; still save when we hit this output time.
+            # Temporary intermediate mode for budget control must not invent
+            # save points; still save when we hit this output time.
             if save_everystep || t[1] >= save_ts[k]
                 push!(ures, copy(u))
                 push!(ts, t[1])
                 dense && push!(dures, copy(du))
             end
-            if iwork[11] >= maxiters
+            # Only MaxIters when work remains (finishing on the last allowed
+            # step is Success, matching OrdinaryDiffEq).
+            if iwork[11] >= maxiters && t[1] < save_ts[end]
                 idid[1] = -1
                 break
             end

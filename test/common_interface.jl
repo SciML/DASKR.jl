@@ -166,6 +166,10 @@ let
         resrob, [-0.04, 0.04, 0.0], [1.0, 0.0, 0.0], (0.0, 100000.0),
         differential_vars = [true, true, false]
     )
+    sol_ref = solve(
+        prob, daskr(); abstol = 1.0e-10, reltol = 1.0e-7, save_everystep = true
+    )
+    nsteps = length(sol_ref.t) - 1
     for save_everystep in (false, true)
         sol = solve(prob, daskr(); abstol = 1.0e-10, reltol = 1.0e-7, save_everystep)
         @test SciMLBase.successful_retcode(sol)
@@ -176,15 +180,27 @@ let
             maxiters = 100
         )
         @test sol.retcode == SciMLBase.ReturnCode.MaxIters
-        # ROBER needs ~655 steps at these tolerances; 600 is past the first
-        # 500-step IDID=-1 boundary but below the finish, so both modes must
-        # return MaxIters (not Success from an unchecked final interval call).
+        # 600 is past the first 500-step IDID=-1 boundary but below the finish
+        # (~nsteps), so both modes must return MaxIters.
+        @test 600 < nsteps
         sol = solve(
             prob, daskr(); abstol = 1.0e-10, reltol = 1.0e-7, save_everystep,
             maxiters = 600
         )
         @test sol.retcode == SciMLBase.ReturnCode.MaxIters
         @test sol.t[end] < 100000.0
+        # Finishing on the last allowed step is Success, not MaxIters.
+        sol = solve(
+            prob, daskr(); abstol = 1.0e-10, reltol = 1.0e-7, save_everystep,
+            maxiters = nsteps
+        )
+        @test SciMLBase.successful_retcode(sol)
+        @test sol.t[end] == 100000.0
+        sol = solve(
+            prob, daskr(); abstol = 1.0e-10, reltol = 1.0e-7, save_everystep,
+            maxiters = nsteps - 1
+        )
+        @test sol.retcode == SciMLBase.ReturnCode.MaxIters
     end
 end
 
@@ -208,4 +224,18 @@ let
         save_everystep = true, dtmax = 0.01, maxiters = 1
     )
     @test sol.retcode == SciMLBase.ReturnCode.MaxIters
+end
+
+# Empty CallbackSet is allowed; a real DiscreteCallback is not.
+let
+    prob = DAEProblem(
+        resrob, [-0.04, 0.04, 0.0], [1.0, 0.0, 0.0], (0.0, 1.0),
+        differential_vars = [true, true, false]
+    )
+    sol = solve(prob, daskr(); callback = SciMLBase.CallbackSet())
+    @test SciMLBase.successful_retcode(sol)
+    @test_throws ErrorException solve(
+        prob, daskr();
+        callback = DiscreteCallback((u, t, integrator) -> false, integrator -> nothing)
+    )
 end
