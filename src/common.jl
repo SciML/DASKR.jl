@@ -153,7 +153,8 @@ function SciMLBase.__solve(
     end
     warned && warn_compat()
 
-    if callback !== nothing || :callback in keys(prob.kwargs)
+    # DiffEqBase may pass an empty CallbackSet; only real callbacks are unsupported.
+    if DiffEqBase.has_callbacks((; callback)) || DiffEqBase.has_callbacks(prob.kwargs)
         error("DASKR is not compatible with callbacks.")
     end
 
@@ -381,6 +382,16 @@ function SciMLBase.__solve(
     for k in start_idx:length(save_ts)
         tout = [save_ts[k]]
         while t[1] < save_ts[k]
+            # DDASKR's interval-output mode (INFO(3) = 0) only returns every
+            # 500 steps with IDID = -1, so a maxiters budget smaller than the
+            # remaining chunk would otherwise overshoot by up to 499 steps.
+            # Switch to intermediate-output mode when the remaining budget is
+            # below that chunk size so maxiters is enforced the same way for
+            # save_everystep = false and true.
+            steps_taken = Int(iwork[11])
+            if !save_everystep && (maxiters - steps_taken) < 500
+                info[3] = Int32(1)
+            end
             unsafe_solve(
                 res, N, t, u, du, tout, info, rtol, atol, idid, rwork,
                 lrw, iwork, liw, rpar, ipar, jac, psol, rt, nrt, jroot
@@ -394,10 +405,14 @@ function SciMLBase.__solve(
             if idid[1] < 0
                 break
             end
-            push!(ures, copy(u))
-            push!(ts, t[1])
-            dense && push!(dures, copy(du))
-            if iwork[11] >= maxiters && t[1] < save_ts[end]
+            # Temporary intermediate mode used only for budget control must
+            # not invent save points; still save when we hit this output time.
+            if save_everystep || t[1] >= save_ts[k]
+                push!(ures, copy(u))
+                push!(ts, t[1])
+                dense && push!(dures, copy(du))
+            end
+            if iwork[11] >= maxiters
                 idid[1] = -1
                 break
             end
