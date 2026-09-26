@@ -8,7 +8,6 @@ using SciMLBase: check_keywords, warn_compat
 abstract type DASKRDAEAlgorithm{LinearSolver} <: SciMLBase.AbstractDAEAlgorithm end
 
 # DiffEqBase may pass an empty CallbackSet; only real callbacks are unsupported.
-# Local predicate (DiffEqBase.has_callbacks is not part of DiffEqBase's public API).
 function _daskr_has_callback(cb)
     cb === nothing && return false
     if cb isa SciMLBase.CallbackSet
@@ -167,7 +166,6 @@ function SciMLBase.__solve(
     end
     warned && warn_compat()
 
-    # DiffEqBase may pass an empty CallbackSet; only real callbacks are unsupported.
     if _daskr_has_callback(callback, prob)
         error("DASKR is not compatible with callbacks.")
     end
