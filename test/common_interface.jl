@@ -239,3 +239,22 @@ let
         callback = DiscreteCallback((u, t, integrator) -> false, integrator -> nothing)
     )
 end
+
+# save_start = false + early MaxIters must still return the last accepted point
+# (OrdinaryDiffEq postamble semantics); previously sol.t/sol.u were empty.
+let
+    prob = DAEProblem(
+        resrob, [-0.04, 0.04, 0.0], [1.0, 0.0, 0.0], (0.0, 100000.0),
+        differential_vars = [true, true, false]
+    )
+    sol = solve(
+        prob, daskr(); abstol = 1.0e-10, reltol = 1.0e-7,
+        save_everystep = false, saveat = [1.0, 10.0, 1.0e4],
+        save_start = false, maxiters = 1
+    )
+    @test sol.retcode == SciMLBase.ReturnCode.MaxIters
+    @test !isempty(sol.t)
+    @test !isempty(sol.u)
+    @test length(sol.t) == length(sol.u)
+    @test sol.u[end] isa AbstractVector
+end

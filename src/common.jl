@@ -477,13 +477,25 @@ function SciMLBase.__solve(
         retcode = ReturnCode.Success
     end
 
+    # OrdinaryDiffEq's postamble saves the current state when nothing was saved
+    # yet (`saveiter == 0`), and also when the last saved time differs from the
+    # integrator time on early exit. Mirror that for MaxIters so `save_start =
+    # false` (or interval-output mode that never reached a saveat) still returns
+    # the last accepted point instead of an empty solution.
+    if retcode == ReturnCode.MaxIters && (isempty(ts) || ts[end] != t[1])
+        push!(ures, copy(u))
+        push!(ts, t[1])
+        dense && push!(dures, copy(du))
+    end
+
+    # `ures` only contains u0 when `save_start`; always map the full saved list.
     timeseries = Vector{uType}(undef, 0)
     if prob.u0 isa Number
-        for i in start_idx:length(ures)
+        for i in 1:length(ures)
             push!(timeseries, ures[i][1])
         end
     else
-        for i in start_idx:length(ures)
+        for i in 1:length(ures)
             push!(timeseries, reshape(ures[i], sizeu))
         end
     end
