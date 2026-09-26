@@ -477,11 +477,7 @@ function SciMLBase.__solve(
         retcode = ReturnCode.Success
     end
 
-    # OrdinaryDiffEq's postamble saves the current state when nothing was saved
-    # yet (`saveiter == 0`), and also when the last saved time differs from the
-    # integrator time on early exit. Mirror that for MaxIters so `save_start =
-    # false` (or interval-output mode that never reached a saveat) still returns
-    # the last accepted point instead of an empty solution.
+    # MaxIters keeps the last accepted point when ts is empty or lags t.
     if retcode == ReturnCode.MaxIters && (isempty(ts) || ts[end] != t[1])
         push!(ures, copy(u))
         push!(ts, t[1])
