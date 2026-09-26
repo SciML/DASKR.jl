@@ -239,3 +239,26 @@ let
         callback = DiscreteCallback((u, t, integrator) -> false, integrator -> nothing)
     )
 end
+
+# MaxIters with save_start=false still returns the last accepted (t, u).
+let
+    prob = DAEProblem(
+        resrob, [-0.04, 0.04, 0.0], [1.0, 0.0, 0.0], (0.0, 100000.0),
+        differential_vars = [true, true, false]
+    )
+    opts = (;
+        abstol = 1.0e-10, reltol = 1.0e-7, saveat = [1.0, 10.0, 1.0e4],
+        save_start = false, maxiters = 1,
+    )
+    sol = solve(prob, daskr(); opts..., save_everystep = false)
+    sol_steps = solve(prob, daskr(); opts..., save_everystep = true)
+    @test sol.retcode == SciMLBase.ReturnCode.MaxIters
+    @test !isempty(sol.t)
+    @test !isempty(sol.u)
+    @test length(sol.t) == length(sol.u)
+    @test sol.u[end] isa AbstractVector
+    @test sol.t[end] > first(prob.tspan)
+    @test sol.u[end] != prob.u0
+    @test sol.t[end] ≈ sol_steps.t[end]
+    @test sol.u[end] ≈ sol_steps.u[end]
+end
